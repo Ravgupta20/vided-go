@@ -1,0 +1,32 @@
+list mic: ffmpeg -list_devices true -f dshow -i dummy
+
+record video with mic: ffmpeg -f gdigrab -framerate 60 -video_size 2560x1440 -offset_x 0 -offset_y 0 -i desktop -f dshow -i audio="Microphone (Yeti Stereo Microphone)" -c:v h264_nvenc -preset p4 -cq:v 19 -c:a aac -pix_fmt yuv420p output.mp4
+
+Thumbnail:
+
+Scenario A: Extract a Specific Moment (Best for Precision):
+If you know exactly what second in your video contains a great shot 
+(for example, at 1 minute and 15 seconds), you can jump directly to that timestamp.
+-ffmpeg -ss 00:01:15 -i output.mp4 -vframes 1 thumbnail.png
+
+Scenario B: Auto-Grab the Very Best Frame (Best for No-Effort)
+If you do not want to hunt for a timestamp, you can use a video filter to scan the video 
+and automatically output the frame that has the highest amount of motion and visual detail.
+-ffmpeg -i output.mp4 -vf "thumbnail" -vframes 1 automatic_thumbnail.png
+
+Scenario C: Create a Grid of Multiple Frames (Best for Options)
+If you want to view a few different moments at once to choose the perfect shot, 
+you can export one frame every 30 seconds into a numbered sequence.
+-ffmpeg -i output.mp4 -vf "fps=1/30" template_thumb_%03d.png
+
+
+Cropping an Image:
+ffmpeg -i thumbnail.png -vf "crop=iw:ih/2:0:0" -update 1 top_half.png
+- iw: Keeps the full width of the original image.
+- ih/2: Sets the output canvas height to exactly 50%.
+- 0:0: Starts cropping from the top-left corner.
+
+
+Center the Overlay Perfectly (Using Safe Math)To center the top image without guessing pixels, subtract the overlay's width (w) and height (h) from the background's total dimensions (W and H).
+ffmpeg -i background.png -i foreground.png -filter_complex "[0:v][1:v]overlay=x=(W-w)/2:y=(H-h)/2" -update 1 composite_output.png
+(W-w)/2: Centers the image horizontally.(H-h)/2: Centers the image vertically.Tip: Change /2 to /1.5 or other numbers to change the placement layout dynamically.
