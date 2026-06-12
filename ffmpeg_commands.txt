@@ -12,7 +12,7 @@ If you know exactly what second in your video contains a great shot
 Scenario B: Auto-Grab the Very Best Frame (Best for No-Effort)
 If you do not want to hunt for a timestamp, you can use a video filter to scan the video 
 and automatically output the frame that has the highest amount of motion and visual detail.
--ffmpeg -i output.mp4 -vf "thumbnail" -vframes 1 automatic_thumbnail.png
+-ffmpeg -i input.mp4 -vf "thumbnail" -vframes 1 automatic_thumbnail.png
 
 Scenario C: Create a Grid of Multiple Frames (Best for Options)
 If you want to view a few different moments at once to choose the perfect shot, 
@@ -30,3 +30,43 @@ ffmpeg -i thumbnail.png -vf "crop=iw:ih/2:0:0" -update 1 top_half.png
 Center the Overlay Perfectly (Using Safe Math)To center the top image without guessing pixels, subtract the overlay's width (w) and height (h) from the background's total dimensions (W and H).
 ffmpeg -i background.png -i foreground.png -filter_complex "[0:v][1:v]overlay=x=(W-w)/2:y=(H-h)/2" -update 1 composite_output.png
 (W-w)/2: Centers the image horizontally.(H-h)/2: Centers the image vertically.Tip: Change /2 to /1.5 or other numbers to change the placement layout dynamically.
+
+
+
+
+
+Step 1: ffmpeg -i input.mp4 -vf "fps=1/30" template_thumb_%03d.png
+Step 2: Join the Images into a VideoOnce you have your sequential list of grid images, use this command to sew them into a brand-new video file:
+ffmpeg -framerate 1 -i grid_%03d.jpg -c:v libx264 -pix_fmt yuv420p output_grid.mp4
+
+-framerate 1: Sets the playback speed. A value of 1 means each grid image stays on the screen for exactly 1 second. Change this to 2 for two images per second, or 0.5 to show each image for 2 seconds. (Note: Always place -framerate before -i).
+-i grid_%03d.jpg: Reads the numbered images in perfect mathematical sequence.
+-c:v libx264:  Compresses the video using the H.264 codec, making it highly compatible with web browsers and phones.
+-pix_fmt yuv420p: Changes the pixel color space layout. Most video players cannot play MP4s made from images without this specific setting.
+
+Bonus: The One-Command "Direct" MethodIf you do not actually need to save the .jpg files to your hard drive and just want to generate this grid video directly from your source file, you can skip the images entirely by changing the output format inside a single command:
+ffmpeg -i input.mp4 -vf "fps=1/10,scale=160:90,tile=4x4" -c:v libx264 -pix_fmt yuv420p direct_grid.mp4
+
+
+
+Grid of Images: Update Your Grid Generation CommandFirst, make sure your initial command saves the images using a sequential number pattern (like %03d). This tells FFmpeg the exact order of the files.
+ffmpeg -i input.mp4 -vf "fps=1/10,scale=160:90,tile=4x4" grid_%03d.jpg
+grid_%03d.jpg creates files named grid_001.jpg, grid_002.jpg, etc.
+
+
+ffmpeg -i input.mp4 -vf "fps=1/30" template_thumb_%03d.png
+
+Show each image for exactly 1 second: 
+ffmpeg -start_number 001 -framerate 1 -i slides_%03d.png -r 24 -c:v libx264 -pix_fmt yuv420p one_second_slides.mp4
+
+ Show each image for 3 seconds (giving you more time to look)
+ffmpeg -start_number 001 -framerate 0.33 -i slides_%03d.png -r 24 -c:v libx264 -pix_fmt yuv420p three_second_slides.mp4
+
+
+From start to timestamp  
+Fast Cut  (No Re-encoding) : ffmpeg -i input.mp4 -to 00:02:30 -c copy output.mp4
+Precise Cut  (With Re-encoding): ffmpeg -i input.mp4 -to 00:02:30.500 output.mp4
+
+From timestamp to end
+Fast Cut  (No Re-encoding): ffmpeg -ss 00:01:45 -i input.mp4 -c copy output.mp4
+Precise Cut  (With Re-encoding): ffmpeg -i input.mp4 -ss 00:01:45.500 output.mp4
