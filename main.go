@@ -15,13 +15,16 @@ func (i *InputVid) Clean() {
 	i.filename = strings.ReplaceAll(i.filename, " ", "")
 }
 func main() {
-	var outputFilename string
+	// var outputFilename
+	var outputAudio string
 	var inputVid InputVid
 	inputVid.filename = "input.mov"
-	inputVid.Clean()
-	outputFilename = "test_output.mp4"
+	// inputVid.Clean()
+	// outputFilename = "test_output.mp4"
+	outputAudio = "audio_out.mp3"
 	// Equivalent to: ffmpeg -i input.mp4 -c:v libx264 -crf 23 output.mp4
-	cmd := copyVid(inputVid.filename, outputFilename, "00:00:05", "")
+	// cmd := copyVid(inputVid.filename, outputFilename, "00:00:05", "")
+	cmd := extractAudio(inputVid.filename, outputAudio)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
