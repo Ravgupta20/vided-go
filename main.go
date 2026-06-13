@@ -15,17 +15,13 @@ func (i *InputVid) Clean() {
 	i.filename = strings.ReplaceAll(i.filename, " ", "")
 }
 func main() {
-	var outputVid string
+	var outputFilename string
 	var inputVid InputVid
 	inputVid.filename = "input.mov"
 	inputVid.Clean()
-	outputVid = "test_output.mp4"
+	outputFilename = "test_output.mp4"
 	// Equivalent to: ffmpeg -i input.mp4 -c:v libx264 -crf 23 output.mp4
-	cmd := exec.Command("ffmpeg",
-		// "-version",
-		"-i", inputVid.filename,
-		"-to", "00:00:3", "-c", "copy", outputVid,
-	)
+	cmd := copyVid(inputVid.filename, outputFilename, "00:00:05", "")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -57,5 +53,22 @@ func extractAudio(input, outputAudio string) *exec.Cmd {
 		"-acodec", "mp3", // Encode audio to MP3
 		outputAudio,
 	}
+	return exec.Command("ffmpeg", args...)
+}
+
+// ffmpeg -ss 00:01:30 -to 00:02:15 -i input.mp4 -c copy output.mp4
+func copyVid(inputName, outputName string, startTime string, endTime string) *exec.Cmd {
+	var args []string
+
+	if startTime != "" {
+		args = append(args, "-ss", startTime)
+	}
+
+	if endTime != "" {
+		args = append(args, "-to", endTime)
+	}
+
+	args = append(args, "-i", inputName, "-c", "copy", outputName)
+
 	return exec.Command("ffmpeg", args...)
 }
