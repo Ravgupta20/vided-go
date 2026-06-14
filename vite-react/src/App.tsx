@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
+import { useAudioMarkers } from './hooks/useAudioMarkers';
 
 interface LocalImage {
   name: string;
@@ -8,10 +9,13 @@ interface LocalImage {
 
 export default function App() {
   const [images, setImages] = useState<LocalImage[]>([]);
-  const [marker, setMarker] = useState<String[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [markerCount, setMarkerCount] = useState<number | "">("");
+  // const audioRef = useRef<HTMLAudioElement | null>(null);
   const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
   const [rootDirectoryHandle, setRootDirectoryHandle] = useState<any>(null);
+
+  const {marker, audioRef, addNewDynamicMarker} =useAudioMarkers();
+
 
   const isImageFile = (fileName: string) =>
     /\.(jpe?g|png|gif|webp|svg|bmp)$/i.test(fileName);
@@ -89,6 +93,34 @@ export default function App() {
       setMarker((prevMarkers) => [...prevMarkers, formattedTimestamp]);
     }
   };
+   // Function to generate markers evenly and add it to markers
+  const generateEvenMarkers = () => {
+  if (!audioRef.current) return;
+
+  const duration = audioRef.current.duration;
+
+  // 1. Safety check for the audio track
+  if (isNaN(duration) || duration === 0) {
+    alert("Audio track is still loading or invalid.");
+    return;
+  }
+
+  // 2. Safety check for the user's input
+  if (markerCount === "" || markerCount <= 0) {
+    alert("Please enter how many markers you want first!");
+    return;
+  }
+
+  const newMarkers: string[] = [];
+  const interval = duration / (markerCount + 1);
+
+  for (let i = 1; i <= markerCount; i++) {
+    const timeInSeconds = interval * i;
+    newMarkers.push(formatTime(timeInSeconds));
+  }
+
+  setMarker(newMarkers);
+};
   // Helper utility to convert raw seconds into a clean timestamp string
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
@@ -150,9 +182,34 @@ export default function App() {
                         }}>
             Your browser does not support the audio element.
             </audio>
+            {/* 2. Controls Row containing the input and button */}
+  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px' }}>
+    
+    {/* <label style={{ color: '#aaa', fontSize: '14px' }}>
+      Markers:  */}
+      
+      {/* THIS IS THE INPUT FIELD WE UPDATED: */}
+      {/* <input 
+        type="number" 
+        value={markerCount} 
+        onChange={(e) => setMarkerCount(e.target.value === "" ? "" : Number(e.target.value))}
+        placeholder="e.g. 5"
+        min="1"
+        style={{
+          width: '60px',
+          padding: '6px',
+          marginLeft: '8px',
+          background: '#222',
+          border: '1px solid #444',
+          color: '#fff',
+          borderRadius: '4px',
+          textAlign: 'center'
+        }}
+      /> */}
+    {/* </label> */}
             {/* Auto-Marker Button */}
   <button
-    onClick={addMidpointMarker}
+    onClick={addNewDynamicMarker}
     style={{
       padding: '8px 16px',
       background: '#007acc',
@@ -167,15 +224,20 @@ export default function App() {
     onMouseOver={(e) => (e.currentTarget.style.background = '#0062a3')}
     onMouseOut={(e) => (e.currentTarget.style.background = '#007acc')}
   >
-    Capture Midpoint Marker
+    Add Marker
   </button>
-  {/* Optional: Visual verification list of your captured markers */}
-  {marker.length > 0 && (
-    <div style={{ color: '#aaa', marginTop: '10px', fontSize: '12px' }}>
-      Captured Markers: {marker.join(', ')}
-    </div>
-  )}
       </div>
+  {/* Display the array */}
+  {/* {marker.length > 0 && (
+    <div style={{ color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
+      <strong>Current Array:</strong> [{marker.map(m => `"${m}"`).join(', ')}]
+    </div>
+  )} */}
+  {/* Current State List Display */}
+  <div style={{ color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
+    <strong>Markers Array:</strong> [{marker.map(m => `"${m}"`).join(', ')}]
+  </div>
+  </div>
     </div>
   );
 }
