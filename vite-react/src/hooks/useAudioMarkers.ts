@@ -100,6 +100,25 @@ const addAndRecalculateMarkers = () => {
   // 3. Overwrite the state with the fully updated, recalculated array
   setMarker(newMarkers);
 };
+
+const convertTimestampToSeconds = (timestamp: string): number => {
+  const parts = timestamp.split(':');
+  
+  if (parts.length === 3) {
+    // Handles HH:MM:SS
+    const hrs = parseInt(parts[0], 10);
+    const mins = parseInt(parts[1], 10);
+    const secs = parseInt(parts[2], 10);
+    return (hrs * 3600) + (mins * 60) + secs;
+  } else {
+    // Handles MM:SS
+    const mins = parseInt(parts[0], 10);
+    const secs = parseInt(parts[1], 10);
+    return (mins * 60) + secs;
+  }
+};
+
+
 // Standard time formatting helper (MM:SS)
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -114,6 +133,7 @@ const formatTime = (seconds: number): string => {
     generateEvenMarkersByCount,
     distributeExistingMarkersEvenly,
     addNewDynamicMarker,
-    addAndRecalculateMarkers
+    addAndRecalculateMarkers,
+    convertTimestampToSeconds,
   };
 };

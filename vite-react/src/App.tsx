@@ -14,7 +14,7 @@ export default function App() {
   const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
   const [rootDirectoryHandle, setRootDirectoryHandle] = useState<any>(null);
 
-  const {marker, audioRef, addAndRecalculateMarkers} =useAudioMarkers();
+  const {marker, audioRef, addAndRecalculateMarkers, convertTimestampToSeconds} =useAudioMarkers();
 
 
   const isImageFile = (fileName: string) =>
@@ -73,6 +73,22 @@ export default function App() {
       alert('Could not delete file. Check permissions.');
     }
   };
+
+  const handleMarkerClick = (timestamp: string) => {
+    if (audioRef.current) {
+      const seconds = convertTimestampToSeconds(timestamp);
+
+      //Jump to that time in the audio track
+      audioRef.current.currentTime = seconds;
+
+      //Automatically start playing the audio track
+      audioRef.current.play().catch((err) => {
+        console.error('Failed to play audio:', err);
+        alert('Could not play audio. Check browser permissions or file validity.');
+      });
+    }
+  }
+
   // Function to calculate midpoint and add it to markers
   const addMidpointMarker = () => {
     if (audioRef.current) {
@@ -234,9 +250,40 @@ export default function App() {
     </div>
   )} */}
   {/* Current State List Display */}
-  <div style={{ color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
+  {/* <div style={{ color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
     <strong>Markers Array:</strong> [{marker.map(m => `"${m}"`).join(', ')}]
-  </div>
+  </div> */}
+  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+      {marker.map((timeString, index) => (
+        <button
+          key={index}
+          onClick={() => handleMarkerClick(timeString)}
+          style={{
+            padding: '6px 12px',
+            background: '#222',
+            border: '1px solid #444',
+            color: '#34a853', // Clean green tone for visual separation
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontFamily: 'monospace',
+            fontWeight: 'bold',
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = '#34a853';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = '#222';
+            e.currentTarget.style.color = '#34a853';
+          }}
+        >
+          {timeString}
+        </button>
+      ))}
+    </div>
+  
   </div>
     </div>
   );
