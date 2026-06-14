@@ -10,6 +10,10 @@ const formatTime = (seconds: number): string => {
 export const useAudioMarkers = () => {
   const [marker, setMarker] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Tracks the index of the marker currently being edited (-1 means none)
+  const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number>(-1);
+  // Stores the temporary text while the user is typing
+  const [selectedMarkerTime, setSelectedMarkerTime] = useState<string>("");
 
   // Feature A: The original midpoint logic
   const addMidpointMarker = () => {
@@ -118,13 +122,26 @@ const convertTimestampToSeconds = (timestamp: string): number => {
   }
 };
 
+  const handleSaveMarker = (index: number) => {
+    // Simple Regex check to ensure they typed a standard format like MM:SS or HH:MM:SS
+    const timeRegex = /^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{2}$/;
 
-// Standard time formatting helper (MM:SS)
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-};
+    if (!timeRegex.test(selectedMarkerTime)) {
+      alert("Invalid format! Please use MM:SS (e.g., 02:15) or HH:MM:SS.");
+      // Revert back without saving
+      setSelectedMarkerIndex(-1);
+      return;
+    }
+
+    // Create a copy of the array, swap the edited value, and update state
+    const updatedMarkers = [...marker];
+    updatedMarkers[index] = selectedMarkerTime;
+    setMarker(updatedMarkers);
+
+    // Close the editing mode
+    setSelectedMarkerIndex(-1);
+  };
+
   return {
     marker,
     setMarker,
@@ -135,5 +152,10 @@ const formatTime = (seconds: number): string => {
     addNewDynamicMarker,
     addAndRecalculateMarkers,
     convertTimestampToSeconds,
+    selectedMarkerIndex,
+    setSelectedMarkerIndex,
+    selectedMarkerTime,
+    setSelectedMarkerTime,
+    handleSaveMarker,
   };
 };

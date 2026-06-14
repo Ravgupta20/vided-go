@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAudioMarkers } from './hooks/useAudioMarkers';
+import { MarkerList } from './components/Markerlist';
+
 
 interface LocalImage {
   name: string;
@@ -14,7 +16,7 @@ export default function App() {
   const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
   const [rootDirectoryHandle, setRootDirectoryHandle] = useState<any>(null);
 
-  const {marker, audioRef, addAndRecalculateMarkers, convertTimestampToSeconds} =useAudioMarkers();
+  const {marker,setMarker, audioRef, addAndRecalculateMarkers, convertTimestampToSeconds} =useAudioMarkers();
 
 
   const isImageFile = (fileName: string) =>
@@ -86,7 +88,36 @@ export default function App() {
         console.error('Failed to play audio:', err);
         alert('Could not play audio. Check browser permissions or file validity.');
       });
-    }
+    }<div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+      {marker.map((timeString, index) => (
+        <button
+          key={index}
+          onClick={() => handleMarkerClick(timeString)}
+          style={{
+            padding: '6px 12px',
+            background: '#222',
+            border: '1px solid #444',
+            color: '#34a853', // Clean green tone for visual separation
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontFamily: 'monospace',
+            fontWeight: 'bold',
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = '#34a853';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = '#222';
+            e.currentTarget.style.color = '#34a853';
+          }}
+        >
+          {timeString}
+        </button>
+      ))}
+    </div>
   }
 
   // Function to calculate midpoint and add it to markers
@@ -201,28 +232,7 @@ export default function App() {
             {/* 2. Controls Row containing the input and button */}
   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px' }}>
     
-    {/* <label style={{ color: '#aaa', fontSize: '14px' }}>
-      Markers:  */}
-      
-      {/* THIS IS THE INPUT FIELD WE UPDATED: */}
-      {/* <input 
-        type="number" 
-        value={markerCount} 
-        onChange={(e) => setMarkerCount(e.target.value === "" ? "" : Number(e.target.value))}
-        placeholder="e.g. 5"
-        min="1"
-        style={{
-          width: '60px',
-          padding: '6px',
-          marginLeft: '8px',
-          background: '#222',
-          border: '1px solid #444',
-          color: '#fff',
-          borderRadius: '4px',
-          textAlign: 'center'
-        }}
-      /> */}
-    {/* </label> */}
+    
             {/* Auto-Marker Button */}
   <button
     onClick={addAndRecalculateMarkers}
@@ -253,7 +263,7 @@ export default function App() {
   {/* <div style={{ color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
     <strong>Markers Array:</strong> [{marker.map(m => `"${m}"`).join(', ')}]
   </div> */}
-  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+  {/* <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
       {marker.map((timeString, index) => (
         <button
           key={index}
@@ -282,8 +292,8 @@ export default function App() {
           {timeString}
         </button>
       ))}
-    </div>
-  
+    </div> */}
+    <MarkerList markers={marker} setMarkers={setMarker} onMarkerClick={handleMarkerClick} />
   </div>
     </div>
   );
