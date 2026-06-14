@@ -1,80 +1,18 @@
 import React, { useState } from 'react';
 import { useAudioMarkers } from './hooks/useAudioMarkers';
 import { MarkerList } from './components/Markerlist';
+import { useImager } from './hooks/Imager';
+import { ImageList } from './components/ImageList';
 
-
-interface LocalImage {
-  name: string;
-  url: string;
-  handle?: any;
-}
 
 export default function App() {
-  const [images, setImages] = useState<LocalImage[]>([]);
   const [markerCount, setMarkerCount] = useState<number | "">("");
+  const { handleOpenDirectory, images, selectedImage, setSelectedImage, handleDeleteImage } = useImager();
   // const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
-  const [rootDirectoryHandle, setRootDirectoryHandle] = useState<any>(null);
+  // const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
+  
 
   const {marker,setMarker, audioRef, addAndRecalculateMarkers, convertTimestampToSeconds} =useAudioMarkers();
-
-
-  const isImageFile = (fileName: string) =>
-    /\.(jpe?g|png|gif|webp|svg|bmp)$/i.test(fileName);
-
-  async function* getImageFilesRecursively(entry: any): AsyncGenerator<LocalImage> {
-    if (entry.kind === 'file') {
-      if (isImageFile(entry.name)) {
-        const file = await entry.getFile();
-        const url = URL.createObjectURL(file);
-        yield { name: entry.name, url, handle: entry };
-      }
-    } else if (entry.kind === 'directory') {
-      for await (const handle of entry.values()) {
-        yield* getImageFilesRecursively(handle);
-      }
-    }
-  }
-
-  const handleOpenDirectory = async () => {
-    try {
-      images.forEach((img) => URL.revokeObjectURL(img.url));
-      setSelectedImage(null);
-
-      const dirHandle = await (window as any).showDirectoryPicker({
-        mode: 'readwrite'
-      });
-      setRootDirectoryHandle(dirHandle);
-
-      const loaded: LocalImage[] = [];
-      for await (const imgData of getImageFilesRecursively(dirHandle)) {
-        loaded.push(imgData);
-      }
-      setImages(loaded);
-      if (loaded.length > 0) setSelectedImage(loaded[0]);
-    } catch (err) {
-      console.log('Directory picker failed or was cancelled:', err);
-    }
-  };
-
-  const handleDeleteImage = async (imageToDelete: LocalImage) => {
-    if (!rootDirectoryHandle) return;
-    const confirmDelete = window.confirm(`Delete "${imageToDelete.name}" from disk?`);
-    if (!confirmDelete) return;
-    try {
-      await rootDirectoryHandle.removeEntry(imageToDelete.name);
-      URL.revokeObjectURL(imageToDelete.url);
-      const updated = images.filter((img) => img.url !== imageToDelete.url);
-      setImages(updated);
-      if (selectedImage?.url === imageToDelete.url) {
-        setSelectedImage(updated.length > 0 ? updated[0] : null);
-      }
-      alert('Deleted.');
-    } catch (err) {
-      console.error('Failed to delete file:', err);
-      alert('Could not delete file. Check permissions.');
-    }
-  };
 
   const handleMarkerClick = (timestamp: string) => {
     if (audioRef.current) {
@@ -88,37 +26,8 @@ export default function App() {
         console.error('Failed to play audio:', err);
         alert('Could not play audio. Check browser permissions or file validity.');
       });
-    }<div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-      {marker.map((timeString, index) => (
-        <button
-          key={index}
-          onClick={() => handleMarkerClick(timeString)}
-          style={{
-            padding: '6px 12px',
-            background: '#222',
-            border: '1px solid #444',
-            color: '#34a853', // Clean green tone for visual separation
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontFamily: 'monospace',
-            fontWeight: 'bold',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = '#34a853';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = '#222';
-            e.currentTarget.style.color = '#34a853';
-          }}
-        >
-          {timeString}
-        </button>
-      ))}
-    </div>
-  }
+    }
+  };
 
   // Function to calculate midpoint and add it to markers
   const addMidpointMarker = () => {
@@ -188,39 +97,20 @@ export default function App() {
       <h3>Loaded Images ({images.length})</h3>
 
       {images.length === 0 ? (
-        <p style={{ color: '#000000' }}>No directory selected or no images found.</p>
+        <p style={{ color: '#aaa' }}>No directory selected or no images found.</p>
       ) : (
-        <div style={{ display: 'flex', gap: 30, marginTop: 20 }}>
-          <div style={{ width: 160, display: 'flex', flexDirection: 'column', gap: 15, maxHeight: '70vh', overflowY: 'auto' }}>
-            {images.map((img, idx) => {
-              const isCurrent = selectedImage?.url === img.url;
-              return (
-                <div key={idx} onClick={() => setSelectedImage(img)} style={{ border: isCurrent ? '2px solid #00ffff' : '1px solid #444', padding: 6, cursor: 'pointer', background: '#2a2a2a' }}>
-                  <img src={img.url} alt={img.name} style={{ width: '100%', height: 80, objectFit: 'cover' }} />
-                  <p style={{ fontSize: 11, color: isCurrent ? '#00ffff' : '#ccc', margin: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{img.name}</p>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#111', borderRadius: 12, padding: 20, border: '1px solid #333', minHeight: 400 }}>
-            {selectedImage ? (
-              <>
-                <img src={selectedImage.url} alt={selectedImage.name} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 4 }} />
-                <p style={{ marginTop: 15, color: '#aaa' }}>{selectedImage.name}</p>
-                <button onClick={() => handleDeleteImage(selectedImage)} style={{ padding: '8px 16px', background: '#ff4d4d', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete Image From Computer</button>
-              </>
-            ) : (
-              <p style={{ color: '#555' }}>Select an image from the left sidebar to preview</p>
-            )}
-          </div>
-        </div>
+        <ImageList 
+          images={images}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          handleDeleteImage={handleDeleteImage}
+        />
       )}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#111', borderRadius: 12, padding: 20, border: '1px solid #333', minHeight: 100 }}>
            <audio 
            ref={audioRef}
               controls
-              src="\public\audio\audio_out.mp3"
+              src="/public/audio/audio_out.mp3"
               style={{ width: '100%', 
                         maxWidth: '500px', 
                         borderRadius: '8px',
@@ -253,46 +143,7 @@ export default function App() {
     Add Marker
   </button>
       </div>
-  {/* Display the array */}
-  {/* {marker.length > 0 && (
-    <div style={{ color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
-      <strong>Current Array:</strong> [{marker.map(m => `"${m}"`).join(', ')}]
-    </div>
-  )} */}
-  {/* Current State List Display */}
-  {/* <div style={{ color: '#aaa', fontSize: '13px', textAlign: 'center' }}>
-    <strong>Markers Array:</strong> [{marker.map(m => `"${m}"`).join(', ')}]
-  </div> */}
-  {/* <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-      {marker.map((timeString, index) => (
-        <button
-          key={index}
-          onClick={() => handleMarkerClick(timeString)}
-          style={{
-            padding: '6px 12px',
-            background: '#222',
-            border: '1px solid #444',
-            color: '#34a853', // Clean green tone for visual separation
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontFamily: 'monospace',
-            fontWeight: 'bold',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = '#34a853';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = '#222';
-            e.currentTarget.style.color = '#34a853';
-          }}
-        >
-          {timeString}
-        </button>
-      ))}
-    </div> */}
+ 
     <MarkerList markers={marker} setMarkers={setMarker} onMarkerClick={handleMarkerClick} />
   </div>
     </div>
