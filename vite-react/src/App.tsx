@@ -3,23 +3,23 @@ import React, { useState } from 'react';
 interface LocalImage {
   name: string;
   url: string;
+  handle?: any;
 }
 
-export default function ImageGalleryViewer() {
+export default function App() {
   const [images, setImages] = useState<LocalImage[]>([]);
-  // Track the image currently viewed in the middle
   const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
+  const [rootDirectoryHandle, setRootDirectoryHandle] = useState<any>(null);
 
-  const isImageFile = (fileName: string) => {
-    return /\.(jpe?g|png|gif|webp|svg|bmp)$/i.test(fileName);
-  };
+  const isImageFile = (fileName: string) =>
+    /\.(jpe?g|png|gif|webp|svg|bmp)$/i.test(fileName);
 
   async function* getImageFilesRecursively(entry: any): AsyncGenerator<LocalImage> {
     if (entry.kind === 'file') {
       if (isImageFile(entry.name)) {
         const file = await entry.getFile();
         const url = URL.createObjectURL(file);
-        yield { name: entry.name, url };
+        yield { name: entry.name, url, handle: entry };
       }
     } else if (entry.kind === 'directory') {
       for await (const handle of entry.values()) {
@@ -31,139 +31,75 @@ export default function ImageGalleryViewer() {
   const handleOpenDirectory = async () => {
     try {
       images.forEach((img) => URL.revokeObjectURL(img.url));
-      setSelectedImage(null); // Clear active preview on new directory load
+      setSelectedImage(null);
 
-      const dirHandle = await (window as any).showDirectoryPicker();
-      const loadedImages: LocalImage[] = [];
+      const dirHandle = await (window as any).showDirectoryPicker({
+        mode: 'readwrite'
+      });
+      setRootDirectoryHandle(dirHandle);
 
+      const loaded: LocalImage[] = [];
       for await (const imgData of getImageFilesRecursively(dirHandle)) {
-        loadedImages.push(imgData);
+        loaded.push(imgData);
       }
-
-      setImages(loadedImages);
-      // Automatically select the first image if available
-      if (loadedImages.length > 0) {
-        setSelectedImage(loadedImages[0]);
-      }
+      setImages(loaded);
+      if (loaded.length > 0) setSelectedImage(loaded[0]);
     } catch (err) {
-      console.log('User cancelled or picker failed:', err);
+      console.log('Directory picker failed or was cancelled:', err);
+    }
+  };
+
+  const handleDeleteImage = async (imageToDelete: LocalImage) => {
+    if (!rootDirectoryHandle) return;
+    const confirmDelete = window.confirm(`Delete "${imageToDelete.name}" from disk?`);
+    if (!confirmDelete) return;
+    try {
+      await rootDirectoryHandle.removeEntry(imageToDelete.name);
+      URL.revokeObjectURL(imageToDelete.url);
+      const updated = images.filter((img) => img.url !== imageToDelete.url);
+      setImages(updated);
+      if (selectedImage?.url === imageToDelete.url) {
+        setSelectedImage(updated.length > 0 ? updated[0] : null);
+      }
+      alert('Deleted.');
+    } catch (err) {
+      console.error('Failed to delete file:', err);
+      alert('Could not delete file. Check permissions.');
     }
   };
 
   return (
-    <div style={{ 
-      padding: '20px', 
-      fontFamily: 'sans-serif', 
-      background: '#1e1e1e', 
-      color: '#fff', 
-      minHeight: '100vh',
-      boxSizing: 'border-box'
-    }}>
-      <button 
-        onClick={handleOpenDirectory}
-        style={{ 
-          padding: '10px 20px', 
-          fontSize: '14px', 
-          cursor: 'pointer',
-          background: '#333',
-          color: '#fff',
-          border: '1px solid #555',
-          borderRadius: '4px'
-        }}
-      >
-        Open Image Directory
-      </button>
-
-      <h3 style={{ margin: '20px 0 10px 0' }}>Loaded Images ({images.length})</h3>
+    <div style={{ padding: 20, fontFamily: 'sans-serif', background: '#1e1e1e', color: '#fff', minHeight: '100vh' }}>
+      <button onClick={handleOpenDirectory} style={{ padding: '10px 20px' }}>Open Image Directory</button>
+      <h3>Loaded Images ({images.length})</h3>
 
       {images.length === 0 ? (
         <p style={{ color: '#aaa' }}>No directory selected or no images found.</p>
       ) : (
-        /* Main Layout split into Sidebar and Central Area */
-        <div style={{ display: 'flex', gap: '30px', marginTop: '20px' }}>
-          
-          {/* Left Sidebar: Thumbnail List */}
-          <div style={{ 
-            width: '160px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '15px',
-            maxHeight: 'calc(100vh - 150px)',
-            overflowY: 'auto',
-            paddingRight: '10px'
-          }}>
-            {images.map((img, index) => {
+        <div style={{ display: 'flex', gap: 30, marginTop: 20 }}>
+          <div style={{ width: 160, display: 'flex', flexDirection: 'column', gap: 15, maxHeight: '70vh', overflowY: 'auto' }}>
+            {images.map((img, idx) => {
               const isCurrent = selectedImage?.url === img.url;
               return (
-                <div 
-                  key={index} 
-                  onClick={() => setSelectedImage(img)}
-                  style={{
-                    border: isCurrent ? '2px solid #00ffff' : '1px solid #444',
-                    borderRadius: '6px',
-                    padding: '6px',
-                    textAlign: 'center',
-                    background: '#2a2a2a',
-                    cursor: 'pointer',
-                    transform: isCurrent ? 'scale(1.02)' : 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <img 
-                    src={img.url} 
-                    alt={img.name} 
-                    style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px' }} 
-                  />
-                  <p style={{ 
-                    fontSize: '11px', 
-                    margin: '6px 0 0 0', 
-                    whiteSpace: 'nowrap', 
-                    overflow: 'hidden', 
-                    textOverflow: 'ellipsis',
-                    color: isCurrent ? '#00ffff' : '#ccc'
-                  }}>
-                    {img.name}
-                  </p>
+                <div key={idx} onClick={() => setSelectedImage(img)} style={{ border: isCurrent ? '2px solid #00ffff' : '1px solid #444', padding: 6, cursor: 'pointer', background: '#2a2a2a' }}>
+                  <img src={img.url} alt={img.name} style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+                  <p style={{ fontSize: 11, color: isCurrent ? '#00ffff' : '#ccc', margin: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{img.name}</p>
                 </div>
               );
             })}
           </div>
 
-          {/* Central Main Preview Area */}
-          <div style={{ 
-            flex: 1, 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            background: '#111',
-            borderRadius: '12px',
-            padding: '20px',
-            border: '1px solid #333',
-            minHeight: '400px'
-          }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#111', borderRadius: 12, padding: 20, border: '1px solid #333', minHeight: 400 }}>
             {selectedImage ? (
               <>
-                <img 
-                  src={selectedImage.url} 
-                  alt={selectedImage.name} 
-                  style={{ 
-                    maxWidth: '100%', 
-                    maxHeight: '70vh', 
-                    objectFit: 'contain',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                    borderRadius: '4px'
-                  }} 
-                />
-                <p style={{ marginTop: '15px', color: '#aaa', fontSize: '14px' }}>
-                  {selectedImage.name}
-                </p>
+                <img src={selectedImage.url} alt={selectedImage.name} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 4 }} />
+                <p style={{ marginTop: 15, color: '#aaa' }}>{selectedImage.name}</p>
+                <button onClick={() => handleDeleteImage(selectedImage)} style={{ padding: '8px 16px', background: '#ff4d4d', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete Image From Computer</button>
               </>
             ) : (
               <p style={{ color: '#555' }}>Select an image from the left sidebar to preview</p>
             )}
           </div>
-
         </div>
       )}
     </div>
