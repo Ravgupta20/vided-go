@@ -73,7 +73,33 @@ const addNewDynamicMarker = () => {
   // Append ONLY this new marker to your state array
   setMarker((prevMarkers) => [...prevMarkers, formattedTimestamp]);
 };
+const addAndRecalculateMarkers = () => {
+  if (!audioRef.current) return;
 
+  const duration = audioRef.current.duration;
+
+  // Safety check to ensure audio file metadata has loaded
+  if (isNaN(duration) || duration === 0) {
+    alert("Audio track is still loading or invalid.");
+    return;
+  }
+
+  // 1. Calculate what the NEXT total size of the array will be
+  const nextTotalCount = marker.length + 1;
+
+  // 2. Re-slice the ENTIRE duration into 'nextTotalCount' intervals
+  const newMarkers: string[] = [];
+  
+  // Option A: If you want them distributed as equal milestones across the track:
+  const interval = duration / nextTotalCount;
+  for (let i = 1; i <= nextTotalCount; i++) {
+    const timeInSeconds = interval * i;
+    newMarkers.push(formatTime(timeInSeconds));
+  }
+
+  // 3. Overwrite the state with the fully updated, recalculated array
+  setMarker(newMarkers);
+};
 // Standard time formatting helper (MM:SS)
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -87,6 +113,7 @@ const formatTime = (seconds: number): string => {
     addMidpointMarker,
     generateEvenMarkersByCount,
     distributeExistingMarkersEvenly,
-    addNewDynamicMarker
+    addNewDynamicMarker,
+    addAndRecalculateMarkers
   };
 };

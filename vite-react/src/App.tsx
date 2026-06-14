@@ -14,7 +14,7 @@ export default function App() {
   const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
   const [rootDirectoryHandle, setRootDirectoryHandle] = useState<any>(null);
 
-  const {marker, audioRef, addNewDynamicMarker} =useAudioMarkers();
+  const {marker, audioRef, addAndRecalculateMarkers} =useAudioMarkers();
 
 
   const isImageFile = (fileName: string) =>
@@ -209,7 +209,7 @@ export default function App() {
     {/* </label> */}
             {/* Auto-Marker Button */}
   <button
-    onClick={addNewDynamicMarker}
+    onClick={addAndRecalculateMarkers}
     style={{
       padding: '8px 16px',
       background: '#007acc',
