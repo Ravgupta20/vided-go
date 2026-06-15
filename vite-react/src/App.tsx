@@ -10,7 +10,10 @@ export default function App() {
   const {
     marker,
     setMarker,
+    handleSaveMarker,
+    selectedMarkerTime,
     audioRef,
+    setSelectedMarkerTime,
     addAndRecalculateMarkers,
     convertTimestampToSeconds,
     selectedMarkerIndex,
@@ -79,8 +82,8 @@ export default function App() {
         fileName = "no_image_assigned.png";
       }
       
-      // Append the clean file name row
-      txtContent += `file '${fileName}'\n`;
+      // Automatically maps to a folder path like: file 'images/rel_014.png'
+      txtContent += `file 'images/${fileName}'\n`;
 
       // 2. Calculate the duration difference for the gap between markers
       if (i < marker.length - 1) {
@@ -167,7 +170,7 @@ export default function App() {
         <audio 
           ref={audioRef}
           controls
-          src="/public/audio/audio_out.mp3"
+          src="/public/audio/july_release.mp3"
           style={{ width: '100%', maxWidth: '600px', borderRadius: '8px', outline: 'none', marginBottom: '16px' }}
         />
         
@@ -189,7 +192,15 @@ export default function App() {
           </button>
         </div>
  
-        <MarkerList markers={marker} onMarkerClick={handleMarkerClick} />
+        <MarkerList 
+          markers={marker} 
+          onMarkerClick={handleMarkerClick} 
+          handleSaveMarker={handleSaveMarker}
+          selectedMarkerTime={selectedMarkerTime}
+          setSelectedMarkerTime={setSelectedMarkerTime}
+          selectedMarkerIndex={selectedMarkerIndex}
+          setSelectedMarkerIndex={setSelectedMarkerIndex}
+          />
       </div>
     </div>
   );

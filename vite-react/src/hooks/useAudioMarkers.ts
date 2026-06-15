@@ -135,18 +135,34 @@ export const useAudioMarkers = () => {
   };
 
   const handleSaveMarker = (index: number) => {
-    const timeRegex = /^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{2}$/;
+ 
 
-    if (!timeRegex.test(selectedMarkerTime)) {
-      alert("Invalid format! Please use MM:SS or HH:MM:SS.");
-      return;
+  const timeRegex = /^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{2}$/;
+
+  if (!timeRegex.test(selectedMarkerTime)) {
+    alert("Invalid format! Please use MM:SS or HH:MM:SS.");
+    return;
+  }
+
+  // 2. Clone the object explicitly so React registers the deep change
+  const updatedMarkers = marker.map((m, idx) => {
+    if (idx === index) {
+      return { ...m, timestamp: selectedMarkerTime };
+    }
+    return m;
+  });
+
+  setMarker((prevMarkers) => {
+    // 1. Guard check against the most current state live array
+    if (!prevMarkers || index < 0 || index >= prevMarkers.length) {
+      console.warn(`Save aborted: Index ${index} is out of bounds in the latest state.`, prevMarkers);
+      return prevMarkers; // Return unchanged state if index doesn't match
     }
 
-    const updatedMarkers = [...marker];
-    // Update just the timestamp sub-property of the object
-    updatedMarkers[index].timestamp = selectedMarkerTime;
-    setMarker(updatedMarkers);
-  };
+    return updatedMarkers; // Update state with the modified array
+
+  });
+};
 
   // Everything returns neatly in one wrapper
   return {

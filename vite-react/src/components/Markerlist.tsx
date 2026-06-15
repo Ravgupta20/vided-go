@@ -3,18 +3,24 @@ import { useState } from 'react';
 import { useAudioMarkers, TimelineMarker } from '../hooks/useAudioMarkers';
 
 interface MarkerListProps {
-  markers: TimelineMarker[];
-  onMarkerClick: (timestamp: string, index: number) => void;
+    markers: TimelineMarker[];
+    onMarkerClick: (timestamp: string, index: number) => void;
+    handleSaveMarker:(index: number)=> void;
+    selectedMarkerTime:string;
+    setSelectedMarkerTime:(time:string)=>void;
+    selectedMarkerIndex: number;
+  setSelectedMarkerIndex: (index: number) => void;
 }
 
-export function MarkerList({ markers, onMarkerClick }: MarkerListProps) {
-  const { 
-    selectedMarkerIndex, 
-    setSelectedMarkerIndex, 
-    selectedMarkerTime, 
-    setSelectedMarkerTime, 
-    handleSaveMarker 
-  } = useAudioMarkers();
+export function MarkerList({ 
+    markers, 
+    onMarkerClick,
+    handleSaveMarker,
+    selectedMarkerTime,
+    setSelectedMarkerTime,
+    selectedMarkerIndex,
+    setSelectedMarkerIndex
+    }: MarkerListProps) {
 
   // Local state to keep track of inline edit mode toggle
   const [isInlineEditing, setIsInlineEditing] = useState<boolean>(false);
