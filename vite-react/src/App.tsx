@@ -1,151 +1,101 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAudioMarkers } from './hooks/useAudioMarkers';
 import { MarkerList } from './components/Markerlist';
 import { useImager } from './hooks/Imager';
-import { ImageList } from './components/ImageList';
-
 
 export default function App() {
-  const [markerCount, setMarkerCount] = useState<number | "">("");
-  const { handleOpenDirectory, images, selectedImage, setSelectedImage, handleDeleteImage } = useImager();
-  // const audioRef = useRef<HTMLAudioElement | null>(null);
-  // const [selectedImage, setSelectedImage] = useState<LocalImage | null>(null);
+  const { handleOpenDirectory, images } = useImager();
   
+  // Connect all our clean object track data from our hook
+  const {
+    marker,
+    setMarker,
+    audioRef,
+    addAndRecalculateMarkers,
+    convertTimestampToSeconds,
+    selectedMarkerIndex,
+    setSelectedMarkerIndex
+  } = useAudioMarkers();
 
-  const {marker,setMarker, audioRef, addAndRecalculateMarkers, convertTimestampToSeconds} =useAudioMarkers();
+  // Triggered when clicking a pool image on the left asset panel
+  const assignPoolImageToSelectedSlot = (imageUrl: string) => {
+    if (selectedMarkerIndex === -1 || selectedMarkerIndex >= marker.length) {
+      alert("Please click and select a marker box from the timeline track below first!");
+      return;
+    }
+    
+    // Update the image property of our active marker object slot
+    const updated = [...marker];
+    updated[selectedMarkerIndex].imageUrl = imageUrl;
+    setMarker(updated);
+  };
 
-  const handleMarkerClick = (timestamp: string) => {
+  const handleMarkerClick = (timestamp: string, index: number) => {
+    setSelectedMarkerIndex(index); // Set our active focus slot
+    
     if (audioRef.current) {
       const seconds = convertTimestampToSeconds(timestamp);
-
-      //Jump to that time in the audio track
       audioRef.current.currentTime = seconds;
-
-      //Automatically start playing the audio track
-      audioRef.current.play().catch((err) => {
-        console.error('Failed to play audio:', err);
-        alert('Could not play audio. Check browser permissions or file validity.');
-      });
+      audioRef.current.play().catch((err) => console.error('Audio play error:', err));
     }
   };
 
-  // Function to calculate midpoint and add it to markers
-  const addMidpointMarker = () => {
-    if (audioRef.current) {
-      const duration = audioRef.current.duration;
+  // Pull the current preview image out based on our highlighted slot
+  const currentlyPreviewedImage = selectedMarkerIndex !== -1 ? marker[selectedMarkerIndex]?.imageUrl : null;
 
-      // Safety check in case audio hasn't loaded yet
-      if (isNaN(duration) || duration === 0) {
-        alert("Audio track is still loading or invalid.");
-        return;
-      }
-
-      const midTimeInSeconds = duration / 2;
-
-      // Format seconds into a standard HH:MM:SS or MM:SS timestamp string
-      const formattedTimestamp = formatTime(midTimeInSeconds);
-
-      // Append to your existing markers array
-      setMarker((prevMarkers) => [...prevMarkers, formattedTimestamp]);
-    }
-  };
-   // Function to generate markers evenly and add it to markers
-  const generateEvenMarkers = () => {
-  if (!audioRef.current) return;
-
-  const duration = audioRef.current.duration;
-
-  // 1. Safety check for the audio track
-  if (isNaN(duration) || duration === 0) {
-    alert("Audio track is still loading or invalid.");
-    return;
-  }
-
-  // 2. Safety check for the user's input
-  if (markerCount === "" || markerCount <= 0) {
-    alert("Please enter how many markers you want first!");
-    return;
-  }
-
-  const newMarkers: string[] = [];
-  const interval = duration / (markerCount + 1);
-
-  for (let i = 1; i <= markerCount; i++) {
-    const timeInSeconds = interval * i;
-    newMarkers.push(formatTime(timeInSeconds));
-  }
-
-  setMarker(newMarkers);
-};
-  // Helper utility to convert raw seconds into a clean timestamp string
-  const formatTime = (seconds: number): string => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    const pad = (num: number) => String(num).padStart(2, '0');
-
-    if (hrs > 0) {
-      return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
-    }
-    return `${pad(mins)}:${pad(secs)}`;
-  };
-
-    return (
+  return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', background: '#fc9797', color: '#fff', minHeight: '100vh' }}>
       <button onClick={handleOpenDirectory} style={{ padding: '10px 20px' }}>Open Image Directory</button>
       <h3>Loaded Images ({images.length})</h3>
+      
+      <div style={{ display: 'flex', gap: 30, marginTop: 20 }}>
+        
+        {/* SIDEBAR ASSET POOL: Completely independent storage pool */}
+        <div style={{ width: 160, display: 'flex', flexDirection: 'column', gap: 15, maxHeight: '70vh', overflowY: 'auto', background: '#2a2a2a', padding: 10, borderRadius: 6 }}>
+          {images.map((img, idx) => (
+            <div 
+              key={idx} 
+              onClick={() => assignPoolImageToSelectedSlot(img.url)} 
+              style={{ padding: 6, cursor: 'pointer', background: '#1a1a1a', border: '1px solid #444', textAlign: 'center' }}
+            >
+              <img src={img.url} alt={img.name} style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+              <p style={{ fontSize: 11, color: '#ccc', margin: '6px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{img.name}</p>
+            </div>
+          ))}
+        </div>
 
-      {images.length === 0 ? (
-        <p style={{ color: '#aaa' }}>No directory selected or no images found.</p>
-      ) : (
-        <ImageList 
-          images={images}
-          selectedImage={selectedImage}
-          setSelectedImage={setSelectedImage}
-          handleDeleteImage={handleDeleteImage}
-        />
-      )}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#111', borderRadius: 12, padding: 20, border: '1px solid #333', minHeight: 100 }}>
-           <audio 
-           ref={audioRef}
-              controls
-              src="/public/audio/audio_out.mp3"
-              style={{ width: '100%', 
-                        maxWidth: '500px', 
-                        borderRadius: '8px',
-                        outline: 'none', 
-                        marginBottom: '12px' // Spacing between track and button
-                        }}>
-            Your browser does not support the audio element.
-            </audio>
-            {/* 2. Controls Row containing the input and button */}
-  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px' }}>
-    
-    
-            {/* Auto-Marker Button */}
-  <button
-    onClick={addAndRecalculateMarkers}
-    style={{
-      padding: '8px 16px',
-      background: '#007acc',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      fontSize: '14px',
-      transition: 'background 0.2s'
-    }}
-    onMouseOver={(e) => (e.currentTarget.style.background = '#0062a3')}
-    onMouseOut={(e) => (e.currentTarget.style.background = '#007acc')}
-  >
-    Add Marker
-  </button>
+        {/* WORKSPACE PREVIEW CANVAS */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#111', borderRadius: 12, padding: 20, border: '1px solid #333', minHeight: 400 }}>
+          {currentlyPreviewedImage ? (
+            <img src={currentlyPreviewedImage} alt="Active Slide View" style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 4 }} />
+          ) : (
+            <p style={{ color: '#555' }}>
+              {selectedMarkerIndex !== -1 ? "This marker slot is empty. Select an asset from the pool on the left to assign it." : "Select a marker slot block below to preview or edit"}
+            </p>
+          )}
+        </div>
       </div>
+      
+      {/* TIMELINE INTERFACE FOOTER */}
+      <div style={{ flex: 1, marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#111', borderRadius: 12, padding: 20, border: '1px solid #333' }}>
+        <audio 
+          ref={audioRef}
+          controls
+          src="/public/audio/audio_out.mp3"
+          style={{ width: '100%', maxWidth: '500px', borderRadius: '8px', outline: 'none', marginBottom: '12px' }}
+        />
+        
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px' }}>
+          <button
+            onClick={addAndRecalculateMarkers}
+            style={{ padding: '8px 16px', background: '#007acc', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+          >
+            Add Marker
+          </button>
+        </div>
  
-    <MarkerList markers={marker} setMarkers={setMarker} onMarkerClick={handleMarkerClick} />
-  </div>
+        <MarkerList markers={marker} onMarkerClick={handleMarkerClick} />
+      </div>
     </div>
   );
 }

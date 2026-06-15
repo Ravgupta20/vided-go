@@ -1,5 +1,11 @@
 import { useState, useRef } from 'react';
 
+// 1. Define what a Timeline Marker object actually looks like
+export interface TimelineMarker {
+  timestamp: string;
+  imageUrl: string | null; // Starts empty, can hold an image from your pool
+}
+
 // Standard time formatting helper (MM:SS)
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -8,11 +14,12 @@ const formatTime = (seconds: number): string => {
 };
 
 export const useAudioMarkers = () => {
-  const [marker, setMarker] = useState<string[]>([]);
+  const [marker, setMarker] = useState<TimelineMarker[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Tracks the index of the marker currently being edited (-1 means none)
+  
+  // Tracks which marker is currently highlighted/focused in the timeline (-1 means none)
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number>(-1);
-  // Stores the temporary text while the user is typing
+  // Stores the temporary text while editing the timestamp
   const [selectedMarkerTime, setSelectedMarkerTime] = useState<string>("");
 
   // Feature A: The original midpoint logic
@@ -22,7 +29,39 @@ export const useAudioMarkers = () => {
     if (isNaN(duration) || duration === 0) return;
 
     const formattedTimestamp = formatTime(duration / 2);
-    setMarker((prev) => [...prev, formattedTimestamp]);
+    setMarker((prev) => [...prev, { timestamp: formattedTimestamp, imageUrl: null }]);
+  };
+
+  // Cleaned-up Recalculator: Generates an empty slot for a pic with every new entry
+  const addAndRecalculateMarkers = () => {
+    if (!audioRef.current) return;
+
+    const duration = audioRef.current.duration;
+    if (isNaN(duration) || duration === 0) {
+      alert("Audio track is still loading or invalid.");
+      return;
+    }
+
+    const nextTotalCount = marker.length + 1;
+    const interval = duration / nextTotalCount;
+    const newMarkers: TimelineMarker[] = [];
+    
+    for (let i = 1; i <= nextTotalCount; i++) {
+      const timeInSeconds = interval * i;
+      
+      // CRITICAL: Preserve any image the user ALREADY assigned to this slot position!
+      const existingImage = marker[i - 1]?.imageUrl || null;
+
+      newMarkers.push({
+        timestamp: formatTime(timeInSeconds),
+        imageUrl: existingImage
+      });
+    }
+
+    setMarker(newMarkers);
+    
+    // Automatically focus the brand new slot we just created
+    setSelectedMarkerIndex(nextTotalCount - 1);
   };
 
   // Feature B: The user-defined count spacing logic
@@ -31,11 +70,11 @@ export const useAudioMarkers = () => {
     const duration = audioRef.current.duration;
     if (isNaN(duration) || duration === 0) return;
 
-    const newMarkers: string[] = [];
+    const newMarkers: TimelineMarker[] = [];
     const interval = duration / (count + 1);
 
     for (let i = 1; i <= count; i++) {
-      newMarkers.push(formatTime(interval * i));
+      newMarkers.push({ timestamp: formatTime(interval * i), imageUrl: null });
     }
     setMarker(newMarkers);
   };
@@ -46,102 +85,70 @@ export const useAudioMarkers = () => {
     const duration = audioRef.current.duration;
     if (isNaN(duration) || duration === 0) return;
 
-    const newMarkers: string[] = [];
+    const newMarkers: TimelineMarker[] = [];
     const interval = duration / (marker.length + 1);
 
     for (let i = 1; i <= marker.length; i++) {
-      newMarkers.push(formatTime(interval * i));
+      newMarkers.push({ timestamp: formatTime(interval * i), imageUrl: null });
     }
     setMarker(newMarkers);
   };
-const addNewDynamicMarker = () => {
-  if (!audioRef.current) return;
 
-  const duration = audioRef.current.duration;
+  const addNewDynamicMarker = () => {
+    if (!audioRef.current) return;
 
-  // Safety check to ensure audio file metadata has loaded
-  if (isNaN(duration) || duration === 0) {
-    alert("Audio track is still loading or invalid.");
-    return;
-  }
+    const duration = audioRef.current.duration;
 
-  // Determine the divisor based on the existing array count
-  // If array is empty (0), we divide by 1 to get the end of the track.
-  const currentCount = marker.length;
-  const divisor = currentCount + 1; 
-
-  // Calculate the specific timestamp position
-  const targetTimeInSeconds = duration / divisor;
-  const formattedTimestamp = formatTime(targetTimeInSeconds);
-
-  // Append ONLY this new marker to your state array
-  setMarker((prevMarkers) => [...prevMarkers, formattedTimestamp]);
-};
-const addAndRecalculateMarkers = () => {
-  if (!audioRef.current) return;
-
-  const duration = audioRef.current.duration;
-
-  // Safety check to ensure audio file metadata has loaded
-  if (isNaN(duration) || duration === 0) {
-    alert("Audio track is still loading or invalid.");
-    return;
-  }
-
-  // 1. Calculate what the NEXT total size of the array will be
-  const nextTotalCount = marker.length + 1;
-
-  // 2. Re-slice the ENTIRE duration into 'nextTotalCount' intervals
-  const newMarkers: string[] = [];
-  
-  // Option A: If you want them distributed as equal milestones across the track:
-  const interval = duration / nextTotalCount;
-  for (let i = 1; i <= nextTotalCount; i++) {
-    const timeInSeconds = interval * i;
-    newMarkers.push(formatTime(timeInSeconds));
-  }
-
-  // 3. Overwrite the state with the fully updated, recalculated array
-  setMarker(newMarkers);
-};
-
-const convertTimestampToSeconds = (timestamp: string): number => {
-  const parts = timestamp.split(':');
-  
-  if (parts.length === 3) {
-    // Handles HH:MM:SS
-    const hrs = parseInt(parts[0], 10);
-    const mins = parseInt(parts[1], 10);
-    const secs = parseInt(parts[2], 10);
-    return (hrs * 3600) + (mins * 60) + secs;
-  } else {
-    // Handles MM:SS
-    const mins = parseInt(parts[0], 10);
-    const secs = parseInt(parts[1], 10);
-    return (mins * 60) + secs;
-  }
-};
-
-  const handleSaveMarker = (index: number) => {
-    // Simple Regex check to ensure they typed a standard format like MM:SS or HH:MM:SS
-    const timeRegex = /^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{2}$/;
-
-    if (!timeRegex.test(selectedMarkerTime)) {
-      alert("Invalid format! Please use MM:SS (e.g., 02:15) or HH:MM:SS.");
-      // Revert back without saving
-      setSelectedMarkerIndex(-1);
+    // Safety check to ensure audio file metadata has loaded
+    if (isNaN(duration) || duration === 0) {
+      alert("Audio track is still loading or invalid.");
       return;
     }
 
-    // Create a copy of the array, swap the edited value, and update state
-    const updatedMarkers = [...marker];
-    updatedMarkers[index] = selectedMarkerTime;
-    setMarker(updatedMarkers);
+    // Determine the divisor based on the existing array count
+    const currentCount = marker.length;
+    const divisor = currentCount + 1; 
 
-    // Close the editing mode
-    setSelectedMarkerIndex(-1);
+    // Calculate the specific timestamp position
+    const targetTimeInSeconds = duration / divisor;
+    const formattedTimestamp = formatTime(targetTimeInSeconds);
+
+    // Append ONLY this new marker to your state array
+    setMarker((prevMarkers) => [...prevMarkers, { timestamp: formattedTimestamp, imageUrl: null }]);
   };
 
+  const convertTimestampToSeconds = (timestamp: string): number => {
+    const parts = timestamp.split(':');
+    
+    if (parts.length === 3) {
+      // Handles HH:MM:SS
+      const hrs = parseInt(parts[0], 10);
+      const mins = parseInt(parts[1], 10);
+      const secs = parseInt(parts[2], 10);
+      return (hrs * 3600) + (mins * 60) + secs;
+    } else {
+      // Handles MM:SS
+      const mins = parseInt(parts[0], 10);
+      const secs = parseInt(parts[1], 10);
+      return (mins * 60) + secs;
+    }
+  };
+
+  const handleSaveMarker = (index: number) => {
+    const timeRegex = /^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{2}$/;
+
+    if (!timeRegex.test(selectedMarkerTime)) {
+      alert("Invalid format! Please use MM:SS or HH:MM:SS.");
+      return;
+    }
+
+    const updatedMarkers = [...marker];
+    // Update just the timestamp sub-property of the object
+    updatedMarkers[index].timestamp = selectedMarkerTime;
+    setMarker(updatedMarkers);
+  };
+
+  // Everything returns neatly in one wrapper
   return {
     marker,
     setMarker,
