@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAudioMarkers } from './hooks/useAudioMarkers';
 import { MarkerList } from './components/Markerlist';
 import { useImager } from './hooks/Imager';
+import { ImageList } from './components/ImageList';
 
 export default function App() {
   const { handleOpenDirectory, images } = useImager();
@@ -16,14 +17,27 @@ export default function App() {
     setSelectedMarkerIndex
   } = useAudioMarkers();
 
-  const assignPoolImageToSelectedSlot = (imageUrl: string) => {
+  // Forces your root html page containers to break out of narrow default templates
+  useEffect(() => {
+    const rootContainer = document.getElementById('root');
+    if (rootContainer) {
+      rootContainer.style.width = '100%';
+      rootContainer.style.maxWidth = '100%';
+      rootContainer.style.margin = '0';
+      rootContainer.style.padding = '0';
+    }
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.width = '100%';
+  }, []);
+
+  const handleSelectImageForMarker = (img: any) => {
     if (selectedMarkerIndex === -1 || selectedMarkerIndex >= marker.length) {
       alert("Please click and select a marker box from the timeline track below first!");
       return;
     }
-    
     const updated = [...marker];
-    updated[selectedMarkerIndex].imageUrl = imageUrl;
+    updated[selectedMarkerIndex].imageUrl = img.url;
     setMarker(updated);
   };
 
@@ -37,7 +51,17 @@ export default function App() {
     }
   };
 
-  const currentlyPreviewedImage = selectedMarkerIndex !== -1 ? marker[selectedMarkerIndex]?.imageUrl : null;
+  const activeSelectedMarkerImage = selectedMarkerIndex !== -1 && marker[selectedMarkerIndex]?.imageUrl
+    ? { name: marker[selectedMarkerIndex].timestamp, url: marker[selectedMarkerIndex].imageUrl! }
+    : null;
+
+  const handleDeleteImagePlaceholder = () => {
+    if (selectedMarkerIndex !== -1) {
+      const updated = [...marker];
+      updated[selectedMarkerIndex].imageUrl = null;
+      setMarker(updated);
+    }
+  };
 
   return (
     <div style={{ 
@@ -46,91 +70,31 @@ export default function App() {
       background: '#fc9797', 
       color: '#fff', 
       minHeight: '100vh', 
-      width: '100%',
+      width: '100vw', // Uses literal viewport width units to break out of parent limits
+      maxWidth: '100%',
+      minWidth: '100vw',
+      overflowX: 'hidden',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
       gap: '16px'
     }}>
       <div>
-        <button onClick={handleOpenDirectory} style={{ padding: '10px 20px', cursor: 'pointer', fontWeight: 'bold' }}>Open Image Directory</button>
+        <button onClick={handleOpenDirectory} style={{ padding: '10px 20px', cursor: 'pointer', fontWeight: 'bold' }}>
+          Open Image Directory
+        </button>
         <h3 style={{ margin: '12px 0 4px 0' }}>Loaded Images ({images.length})</h3>
       </div>
       
-      {/* 2-Column Main Layout Workspace Wrapper */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '20px', 
-        width: '100%', 
-        boxSizing: 'border-box',
-        alignItems: 'stretch'
-      }}>
-        
-        {/* LEFT COLUMN: Pure Image Asset Pool Panel */}
-        <div style={{ 
-          width: '180px', 
-          minWidth: '180px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '12px', 
-          height: '60vh', 
-          minHeight: '400px',
-          overflowY: 'auto', 
-          background: '#2a2a2a', 
-          padding: '12px', 
-          borderRadius: '8px',
-          border: '1px solid #444',
-          boxSizing: 'border-box'
-        }}>
-          {images.length === 0 ? (
-            <div style={{ color: '#777', fontSize: '12px', textAlign: 'center', marginTop: '40px', fontStyle: 'italic', lineHeight: '1.5' }}>
-              No images<br/>loaded yet.
-            </div>
-          ) : (
-            images.map((img, idx) => (
-              <div 
-                key={idx} 
-                onClick={() => assignPoolImageToSelectedSlot(img.url)} 
-                style={{ padding: '6px', cursor: 'pointer', background: '#1a1a1a', border: '1px solid #444', textAlign: 'center', borderRadius: '4px' }}
-              >
-                <img src={img.url} alt={img.name} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '2px' }} />
-                <p style={{ fontSize: '11px', color: '#ccc', margin: '6px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{img.name}</p>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* WORKSPACE MAIN PREVIEW CANVAS */}
-        <div style={{ 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          background: '#111', 
-          borderRadius: '12px', 
-          padding: '20px', 
-          border: '1px solid #333', 
-          height: '60vh',
-          minHeight: '400px',
-          boxSizing: 'border-box'
-        }}>
-          {currentlyPreviewedImage ? (
-            <img src={currentlyPreviewedImage} alt="Active Slide View" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '4px' }} />
-          ) : (
-            <div style={{ textAlign: 'center', color: '#555' }}>
-              <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🖼️</p>
-              <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
-                {selectedMarkerIndex !== -1 
-                  ? "This marker slot is empty. Click an asset on the left to assign it." 
-                  : "Select a timeline marker block below to preview or edit"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Renders the fixed-width ImageList component */}
+      <ImageList 
+        images={images}
+        selectedImage={activeSelectedMarkerImage}
+        setSelectedImage={handleSelectImageForMarker}
+        handleDeleteImage={handleDeleteImagePlaceholder}
+      />
       
-      {/* TIMELINE CONTROLS PANEL FOOTER */}
+      {/* TIMELINE TRACK CONTROLS FOOTER */}
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
