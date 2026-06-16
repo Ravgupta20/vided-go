@@ -75,3 +75,12 @@ Precise Cut  (With Re-encoding): ffmpeg -i input.mp4 -ss 00:01:45.500 output.mp4
 Cutting Audio:
 ffmpeg -i palworld_release_video.mp4 -vn -ar 44100 -ac 2 -b:a 192k output.mp3
 ffmpeg -i three_second_slides.mp4 -i output.mp3 -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 three_audio_comb.mp4
+
+Extract multiple segments into separate video files using a single text file,
+00:01:20 00:00:30 part1.mp4
+00:05:10 00:01:15 part2.mp4
+00:12:45 00:02:00 part3.mp4
+
+Loop through these using a programming language
+ffmpeg -ss 00:01:20 -i input.mp4 -t 00:00:30 -c copy part1.mp4 -ss 00:05:10 -i input.mp4 -t 00:01:15 -c copy part2.mp4 -ss 00:12:45 -i input.mp4 -t 00:02:00 -c copy part3.mp4
+
