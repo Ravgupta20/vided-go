@@ -35,7 +35,9 @@ func main() {
 	// 	// "29:20", // Timer 4
 	// 	// "30:20", // Timer 5 (selected)
 	// }
-	// createRecording(`Microphone (Yeti Stereo Microphone)`, `testoutput.mp4`)
+	// createVirtualRecording(`Microphone (Yeti Stereo Microphone)`, `testoutput.mp4`)
+	createVirtualRecording(`CABLE Output (VB-Audio Virtual Cable)`, `testoutput.mp4`)
+
 	// cutBulkSegments(rawTimers)
 
 	// 1. Define your initial string
@@ -48,7 +50,7 @@ func main() {
 	// // getBestFrame(&inputVid, "test1.png")
 	// // extractAudio(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `audio_out.mp3`).Run()
 	// copyVid(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `palworld_ffmpeg_1.mp4`, "00:03:30", "00:05:20").Run()
-	copyVid(`normies_dicovers_programming.mp4`, `casual_dicovers_programming.mp4`, "00:00:13", "").Run()
+	// copyVid(`normies_dicovers_programming.mp4`, `casual_dicovers_programming.mp4`, "00:00:13", "").Run()
 	// copyVid(`C:\github\vided-go\Palworld_FFMPEG_3.mp4`, `palworld_ffmpeg_2.mp4`, "", "00:00:52").Run()
 	// copyVid(`C:\github\vided-go\FFMPEG_Bulk_Concat_Palworld_Images.mp4`, `Palworld_Release_Trailer_Funny_Screen_Shots.mp4`, "00:01:35", "").Run()
 	// copyVid(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `palworld_ffmpeg_3.mp4`, "00:29:20", "00:31:20").Run()
@@ -361,6 +363,43 @@ func createRecording(audioInput string, outputName string) {
 		"-preset", "p4",		
 		"-cq:v", "19",
 		"-c:a", "aac",
+		"-pix_fmt", "yuv420p",
+		"-y",
+		outputName,
+	}
+	cmd := exec.Command("ffmpeg", args...)
+
+	// Capture both standard output and potential error output
+	// var outBuffer bytes.Buffer
+	var errBuffer bytes.Buffer
+	// cmd.Stdout = &outBuffer
+	cmd.Stderr = &errBuffer
+	// Execute the command
+	err := cmd.Run()
+	if err != nil {
+		// FIX: Use Printf so you can actually read the error in your terminal
+		fmt.Printf("ffmpeg failed: %v (stderr: %s)\n", err, errBuffer.String())
+		return
+	}
+
+
+}// ffmpeg -f gdigrab -framerate 60 -video_size 2560x1440 -offset_x 0 -offset_y 0 -i desktop -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -c:v h264_nvenc -preset p4 -cq 19 -b:v 0 -c:a aac -b:a 192k -pix_fmt yuv420p output.mp4
+func createVirtualRecording(audioInput string, outputName string) {
+	args := []string{
+		"-f", "gdigrab",
+		"-framerate", "60",
+		"-video_size", "2560x1440",
+		"-offset_x", "0",
+		"-offset_y", "0",
+		"-i", "desktop",
+		"-f", "dshow",	
+		"-i", fmt.Sprintf("audio=%s", audioInput),
+		"-c:v", "h264_nvenc",
+		"-preset", "p4",		
+		"-cq:v", "19",
+		"-b:v", "0",
+		"-c:a", "aac",
+		"-b:a", "192k",
 		"-pix_fmt", "yuv420p",
 		"-y",
 		outputName,
