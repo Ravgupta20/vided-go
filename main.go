@@ -18,14 +18,31 @@ func (i *InputVid) Clean() {
 }
 
 type Timer struct {
-	ID			int
-	RawTime 	string
-	Duration 	time.Duration
+	ID       int
+	RawTime  string
+	Duration time.Duration
 }
 
-
+type ImageDir struct {
+	Images []string
+}
 
 func main() {
+	//*******************Dir*******************
+	// searchDir := "./slides"
+	// var collection ImageDir
+	// files, err := os.ReadDir(searchDir)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// for _, file := range files {
+	// 	// Skip directories, only match files ending in .png
+	// 	if !file.IsDir() && strings.HasSuffix(strings.ToLower(file.Name()), ".png") {
+	// 		append(collection.Images, file.Name())
+	// 	}
+	// }
+
+	//**************************************
 	// 1. Initialize multiple timer objects matching your image data
 	// Supported formats: MM:SS or H:MM:SS by appending 'm' and 's' suffixes
 	// rawTimers := []string{
@@ -43,8 +60,8 @@ func main() {
 	// timerStr := "00:00:00"
 	// // var outputFilename
 	// // var outputAudio string
-	var inputVid InputVid
-	inputVid.filename = `C:\github\vided-go\recordings\delete_data.mp4`
+	// var inputVid InputVid
+	// inputVid.filename = `C:\github\vided-go\recordings\delete_data.mp4`
 	// // inputVid.filename = "audio_vid_input.mov"
 	// // getBestFrame(&inputVid, "test1.png")
 	// extractAudio(`Palworld_Dev_ants_To_Delete_Your_Data_audio.mp4`, `Palworld_Delete.mp3`).Run()
@@ -57,7 +74,7 @@ func main() {
 	// copyVid(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `palworld_ffmpeg_3.mp4`, "00:29:20", "00:31:20").Run()
 	// copyVid(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `palworld_ffmpeg_4.mp4`, "00:30:20", "00:32:20").Run()
 	// createVideoAudioAndFrames(`C:\github\vided-go\vite-react\public\audio\audio_out.mp3`, `recordings\slides\input_images_timeline.txt`, "test_audio_vid.mp4")
-	getFrameSlides(&inputVid, "slides/slides_%03d.png")
+	// getFrameSlides(&inputVid, "slides/slides_%03d.png")
 	// getSingleFrame(&inputVid, "00:00:01", "test.png")
 	// inputVid.Clean()
 	// outputFilename = "test_output.mp4"
@@ -90,10 +107,22 @@ func main() {
 	// 	"output.mp4",
 	// )
 
+	//************Images************
+
+	// err := specificCoordinateCrop("/Users/ravi/Desktop/projects/github/vided-go/slides/slides_002.png", "output.png", 900, 500, 100, 50)
+
+	// err := CenteredCrop("/Users/ravi/Desktop/projects/github/vided-go/slides/slides_002.png", "output_centered.jpg", 1200, 800)
+	err := CropEdges("/Users/ravi/Desktop/projects/github/vided-go/slides/slides_002.png", "output_trimmed.jpg", 100, 200)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println("Crop successful!")
+
 }
 
 func cutBulkSegments(rawTimers []string) {
-	
+
 	var timers []Timer
 
 	// 2. Loop through and create duration objects for each
@@ -102,7 +131,7 @@ func cutBulkSegments(rawTimers []string) {
 		// We can quickly reformat "MM:SS" strings by replacing ":" with "m" and adding "s"
 		var formatted string
 		var min, sec int
-		
+
 		// Parse string numbers directly to avoid layout mismatches with missing leading zeros
 		_, err := fmt.Sscanf(raw, "%d:%d", &min, &sec)
 		if err != nil {
@@ -123,7 +152,6 @@ func cutBulkSegments(rawTimers []string) {
 			Duration: duration,
 		})
 	}
-
 
 	fmt.Println("--- Original Timers vs Updated (+2 Min) ---")
 
@@ -316,8 +344,8 @@ func getFrameSlides(input *InputVid, outputName string) {
 
 }
 
-//ffmpeg -f concat -safe 0 -i input_images_timeline.txt -i audio_out.mp3 -pix_fmt yuv420p -c:v libx264 -c:a copy -shortest output.mp4
-func createVideoAudioAndFrames(inputAudio string, textFile string, outputName string){
+// ffmpeg -f concat -safe 0 -i input_images_timeline.txt -i audio_out.mp3 -pix_fmt yuv420p -c:v libx264 -c:a copy -shortest output.mp4
+func createVideoAudioAndFrames(inputAudio string, textFile string, outputName string) {
 	// Group the -vf flag and its complete filter rule together
 	args := []string{
 		"-f", "concat",
@@ -349,6 +377,7 @@ func createVideoAudioAndFrames(inputAudio string, textFile string, outputName st
 	}
 
 }
+
 // ffmpeg -f gdigrab -framerate 60 -video_size 2560x1440 -offset_x 0 -offset_y 0 -i desktop -f dshow -i audio="Microphone (Yeti Stereo Microphone)" -c:v h264_nvenc -preset p4 -cq:v 19 -c:a aac -pix_fmt yuv420p output.mp4
 func createRecording(audioInput string, outputName string) {
 	args := []string{
@@ -358,10 +387,10 @@ func createRecording(audioInput string, outputName string) {
 		"-offset_x", "0",
 		"-offset_y", "0",
 		"-i", "desktop",
-		"-f", "dshow",	
+		"-f", "dshow",
 		"-i", fmt.Sprintf("audio=%s", audioInput),
 		"-c:v", "h264_nvenc",
-		"-preset", "p4",		
+		"-preset", "p4",
 		"-cq:v", "19",
 		"-c:a", "aac",
 		"-pix_fmt", "yuv420p",
@@ -383,7 +412,6 @@ func createRecording(audioInput string, outputName string) {
 		return
 	}
 
-
 }
 
 // ffmpeg -f gdigrab -framerate 60 -video_size 2560x1440 -offset_x 0 -offset_y 0 -i desktop -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -c:v h264_nvenc -preset p4 -cq 19 -b:v 0 -c:a aac -b:a 192k -pix_fmt yuv420p output.mp4
@@ -395,10 +423,10 @@ func createVirtualRecording(audioInput string, outputName string) {
 		"-offset_x", "0",
 		"-offset_y", "0",
 		"-i", "desktop",
-		"-f", "dshow",	
+		"-f", "dshow",
 		"-i", fmt.Sprintf("audio=%s", audioInput),
 		"-c:v", "h264_nvenc",
-		"-preset", "p4",		
+		"-preset", "p4",
 		"-cq:v", "19",
 		"-b:v", "0",
 		"-c:a", "aac",
@@ -449,4 +477,65 @@ func concatAudio(fileInput string, outputName string) {
 		return
 	}
 
+}
+
+// Specific Coordinate Crop (Top-Left Origin)To crop an image to exact dimensions
+// and place the starting corner at a specific coordinate:
+// - ffmpeg -i input.jpg -vf "crop=400:300:100:50" output.jpg
+func specificCoordinateCrop(input, output string, width, height, x, y int) error {
+	filter := fmt.Sprintf("crop=%d:%d:%d:%d", width, height, x, y)
+
+	cmd := exec.Command("ffmpeg", "-y", "-i", input, "-vf", filter, output)
+
+	var errBuf bytes.Buffer
+	cmd.Stderr = &errBuf
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("ffmpeg failed: %w (stderr: %s)", err, errBuf.String())
+	}
+	return nil
+}
+
+// Centered CropIf you want to crop an area from the exact center of the image,
+// you don't need to do the math yourself. You can use built-in FFmpeg variables
+// (in_w for width, in_h for height):
+
+// - ffmpeg -i input.jpg -vf "crop=400:300:(in_w-400)/2:(in_h-300)/2" output.jpg
+
+func CenteredCrop(input, output string, width, height int) error {
+	// FFmpeg automatically centers the crop if you omit the x and y coordinates.
+	// crop=400:300 is identical to crop=400:300:(in_w-400)/2:(in_h-300)/2
+	filter := fmt.Sprintf("crop=%d:%d", width, height)
+
+	cmd := exec.Command("ffmpeg", "-y", "-i", input, "-vf", filter, output)
+
+	var errBuf bytes.Buffer
+	cmd.Stderr = &errBuf
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("ffmpeg centered crop failed: %w (stderr: %s)", err, errBuf.String())
+	}
+	return nil
+}
+
+// Crop Relative to Input Size (e.g., Cropping Edges)Instead of hardcoding absolute pixel dimensions,
+// you can do math relative to the input image using iw (input width) and ih (input height).
+// This command crops 50 pixels off every edge:
+
+// - ffmpeg -i input.jpg -vf "crop=iw-100:ih-100:50:50" output.jpg
+// CropEdges removes a specific pixel padding from all four sides of the image.
+func CropEdges(input, output string, horizontalPad, verticalPad int) error {
+	// Formula: width = input width - (left + right padding), height = input height - (top + bottom padding)
+	// Offset x = left padding, Offset y = top padding
+	filter := fmt.Sprintf("crop=iw-%d:ih-%d:%d:%d", horizontalPad*2, verticalPad*2, horizontalPad, verticalPad)
+
+	cmd := exec.Command("ffmpeg", "-y", "-i", input, "-vf", filter, output)
+
+	var errBuf bytes.Buffer
+	cmd.Stderr = &errBuf
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("ffmpeg edge crop failed: %w (stderr: %s)", err, errBuf.String())
+	}
+	return nil
 }
