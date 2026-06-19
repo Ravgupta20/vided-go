@@ -1,0 +1,18 @@
+Add Centered Top Text (White with Black Outline)
+ffmpeg -i input.jpg -vf "drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='2021':x=(w-text_w)/2:y=30:fontsize=64:fontcolor=white:borderw=4:bordercolor=black" output.jpg
+x=(w-text_w)/2: Automatically centers the text horizontally.
+y=30: Places the text 30 pixels down from the top edge.border
+w=4: Adds a thick, 4-pixel outline.
+
+Add Top-Left Text (Yellow with Black Outline)
+ffmpeg -i input.jpg -vf "drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='SO SLOW...':x=20:y=20:fontsize=72:fontcolor=yellow:borderw=5:bordercolor=black" output.jpg
+x=20:y=20: Pushes the text slightly away from the top-left corner edges.
+fontcolor=yellow: Changes the core text fill to bright yellow.
+
+Add a Drop Shadow Effect
+If you want to add a soft drop shadow like the first image instead of (or in addition to) a sharp border, add the shadowx, shadowy, and shadowcolor properties:
+
+ffmpeg -i input.jpg -vf "drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='2021':x=(w-text_w)/2:y=30:fontsize=64:fontcolor=white:shadowx=5:shadowy=5:shadowcolor=black@0.6" output.jpg
+
+shadowx=5:shadowy=5: Shifts the shadow 5 pixels down and 5 pixels to the right.
+shadowcolor=black@0.6: Creates a black shadow with a 60% transparency layer so it blends smoothly over the background image.

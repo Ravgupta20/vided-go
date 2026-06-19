@@ -35,21 +35,27 @@ func main() {
 	// 	// "29:20", // Timer 4
 	// 	// "30:20", // Timer 5 (selected)
 	// }
+
+
 	// createRecording(`Microphone (Yeti Stereo Microphone)`, `Palworld_Dev_Wants_To_Delete_Your_Data_audio2.mp4`)
-	// createVirtualRecording(`CABLE Output (VB-Audio Virtual Cable)`, `testoutput.mp4`)
+	// createVirtualRecording(`CABLE Output (VB-Audio Virtual Cable)`, `speedrunChillet2.mp4`)
 	// concatAudio(`C:\github\vided-go\recordings\july_release\concat_audio.txt`, "concated_audio.mp3")
 	// cutBulkSegments(rawTimers)
 	// 1. Define your initial string
 	// timerStr := "00:00:00"
 	// // var outputFilename
 	// // var outputAudio string
-	var inputVid InputVid
-	inputVid.filename = `C:\github\vided-go\recordings\delete_data.mp4`
+	// var inputVid InputVid
+	// inputVid.filename = `C:\github\vided-go\recordings\delete_data.mp4`
 	// // inputVid.filename = "audio_vid_input.mov"
 	// // getBestFrame(&inputVid, "test1.png")
 	// extractAudio(`Palworld_Dev_ants_To_Delete_Your_Data_audio.mp4`, `Palworld_Delete.mp3`).Run()
 	// extractAudio(`Palworld_Dev_Wants_To_Delete_Your_Data_audio2.mp4`, `Palworld_Delete2.mp3`).Run()
-	// copyVid(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `palworld_ffmpeg_1.mp4`, "00:03:30", "00:05:20").Run()
+	copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\test.mp4`, "00:19:24", "00:20:07").Run()
+	copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\Chillet_Fight.mp4`, "00:21:35", "00:23:55").Run()
+	concatBulkVideo(`recordings/quick_level/vidConcat.txt`, `recordings/quick_level/concat_output.mp4`)
+
+	// copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\Palworld:rocks.mp4`, "00:42:48", "00:43:00").Run()
 	// copyVid(`C:\github\vided-go\Palworld_Delete.mp3`, `Palworld_Delete_audio.mp3`, "", "00:00:22").Run()
 	// copyVid(`C:\github\vided-go\Palworld_Delete2.mp3`, `Palworld_Delete_audio2.mp3`, "", "00:00:34").Run()
 	// copyVid(`C:\github\vided-go\Palworld_Delete2.mp3`, `Palworld_Delete2.mp3`, "", "00:00:52").Run()
@@ -57,7 +63,7 @@ func main() {
 	// copyVid(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `palworld_ffmpeg_3.mp4`, "00:29:20", "00:31:20").Run()
 	// copyVid(`C:\github\vided-go\recordings\july_release\release_july_release_hype.mp4`, `palworld_ffmpeg_4.mp4`, "00:30:20", "00:32:20").Run()
 	// createVideoAudioAndFrames(`C:\github\vided-go\vite-react\public\audio\audio_out.mp3`, `recordings\slides\input_images_timeline.txt`, "test_audio_vid.mp4")
-	getFrameSlides(&inputVid, "slides/slides_%03d.png")
+	// getFrameSlides(&inputVid, "slides/slides_%03d.png")
 	// getSingleFrame(&inputVid, "00:00:01", "test.png")
 	// inputVid.Clean()
 	// outputFilename = "test_output.mp4"
@@ -349,22 +355,28 @@ func createVideoAudioAndFrames(inputAudio string, textFile string, outputName st
 	}
 
 }
-// ffmpeg -f gdigrab -framerate 60 -video_size 2560x1440 -offset_x 0 -offset_y 0 -i desktop -f dshow -i audio="Microphone (Yeti Stereo Microphone)" -c:v h264_nvenc -preset p4 -cq:v 19 -c:a aac -pix_fmt yuv420p output.mp4
+// ffmpeg -f ddagrab -framerate 60 -video_size 2560x1440 -i desktop \
+// -f dshow -queue_size 1024 -i audio="Microphone (Yeti Stereo Microphone)" \
+// -c:v h264_nvenc -preset p4 -cq:v 19 -pix_fmt yuv420p \
+// -c:a aac -b:a 192k \
+// -thread_queue_size 512 -vsync cfr output.mp4
 func createRecording(audioInput string, outputName string) {
 	args := []string{
-		"-f", "gdigrab",
+		"-f", "ddagrab",
 		"-framerate", "60",
 		"-video_size", "2560x1440",
-		"-offset_x", "0",
-		"-offset_y", "0",
 		"-i", "desktop",
 		"-f", "dshow",	
+		"-queue_size", "1024",
 		"-i", fmt.Sprintf("audio=%s", audioInput),
 		"-c:v", "h264_nvenc",
 		"-preset", "p4",		
 		"-cq:v", "19",
-		"-c:a", "aac",
 		"-pix_fmt", "yuv420p",
+		"-c:a", "aac",
+		"-b:a", "192k",
+		"-thread_queue_size", "512",
+		"-vsync", "cfr",
 		"-y",
 		outputName,
 	}
@@ -386,10 +398,10 @@ func createRecording(audioInput string, outputName string) {
 
 }
 
-// ffmpeg -f gdigrab -framerate 60 -video_size 2560x1440 -offset_x 0 -offset_y 0 -i desktop -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -c:v h264_nvenc -preset p4 -cq 19 -b:v 0 -c:a aac -b:a 192k -pix_fmt yuv420p output.mp4
+// ffmpeg -f ddagrab -framerate 60 -video_size 2560x1440 -offset_x 0 -offset_y 0 -i desktop -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -c:v h264_nvenc -preset p4 -cq 19 -b:v 0 -c:a aac -b:a 192k -pix_fmt yuv420p output.mp4
 func createVirtualRecording(audioInput string, outputName string) {
 	args := []string{
-		"-f", "gdigrab",
+		"-f", "ddagrab",
 		"-framerate", "60",
 		"-video_size", "2560x1440",
 		"-offset_x", "0",
@@ -431,6 +443,33 @@ func concatAudio(fileInput string, outputName string) {
 		"-safe", "0",
 		"-i", fileInput,
 		"-c:a", "copy",
+		"-y",
+		outputName,
+	}
+	cmd := exec.Command("ffmpeg", args...)
+
+	// Capture both standard output and potential error output
+	// var outBuffer bytes.Buffer
+	var errBuffer bytes.Buffer
+	// cmd.Stdout = &outBuffer
+	cmd.Stderr = &errBuffer
+	// Execute the command
+	err := cmd.Run()
+	if err != nil {
+		// FIX: Use Printf so you can actually read the error in your terminal
+		fmt.Printf("ffmpeg failed: %v (stderr: %s)\n", err, errBuffer.String())
+		return
+	}
+
+}
+
+//ffmpeg -f concat -safe 0 -i mylist.txt -c copy output.mp4
+func concatBulkVideo(fileInput string, outputName string) {
+	args := []string{
+		"-f", "concat",
+		"-safe", "0",
+		"-i", fileInput,
+		"-c", "copy",
 		"-y",
 		outputName,
 	}
