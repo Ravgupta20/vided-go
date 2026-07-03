@@ -29,6 +29,7 @@ func (fv *FinalVideo) CreateFinalVid() {
 	fv.LoadPaths()
 	// fv.PrepareVids()
 	fv.CreateConcatFile()
+	concatVideo(fv.path, fv.output.filename)
 }
 
 func (fv *FinalVideo) LoadPaths() {
@@ -89,10 +90,7 @@ type ImageDir struct {
 }
 
 func main() {
-	var finalVid FinalVideo
-	finalVid.path = "recordings/finalVideo/body"
-	checkRecordingDir(finalVid.path)
-	finalVid.CreateFinalVid()
+	createFinalVideo("recordings/finalVideo/body")
 	//*******************Dir*******************
 	// searchDir := "./slides"
 	// var collection ImageDir
@@ -184,6 +182,13 @@ func main() {
 	// }
 	// fmt.Println("Crop successful!")
 
+}
+
+func createFinalVideo(path string) {
+	var finalVid FinalVideo
+	finalVid.path = path
+	checkRecordingDir(finalVid.path)
+	finalVid.CreateFinalVid()
 }
 
 func cutBulkSegments(rawTimers []string) {
@@ -655,4 +660,31 @@ func converTimeToDecimal(timeString string) (float64, error) {
 
 	totalSeconds := (hour * 3600) + (min * 60) + seconds
 	return totalSeconds, nil
+}
+
+// ffmpeg -f concat -safe 0 -i inputs.txt -c:a copy output.mov
+func concatVideo(fileInput string, outputName string) {
+	args := []string{
+		"-f", "concat",
+		"-safe", "0",
+		"-i", fileInput,
+		"-c:a", "copy",
+		"-y",
+		outputName,
+	}
+	cmd := exec.Command("ffmpeg", args...)
+
+	// Capture both standard output and potential error output
+	// var outBuffer bytes.Buffer
+	var errBuffer bytes.Buffer
+	// cmd.Stdout = &outBuffer
+	cmd.Stderr = &errBuffer
+	// Execute the command
+	err := cmd.Run()
+	if err != nil {
+		// FIX: Use Printf so you can actually read the error in your terminal
+		fmt.Printf("ffmpeg failed: %v (stderr: %s)\n", err, errBuffer.String())
+		return
+	}
+
 }
