@@ -27,8 +27,8 @@ type FinalVideo struct {
 
 func (fv *FinalVideo) CreateFinalVid() {
 	fv.LoadPaths()
+	// fv.PrepareVids()
 	fv.CreateConcatFile()
-
 }
 
 func (fv *FinalVideo) LoadPaths() {
@@ -39,6 +39,28 @@ func (fv *FinalVideo) LoadPaths() {
 	fv.outro.filename = filepath.Join(fv.path, "outro.mov")
 	fv.output.filename = filepath.Join(fv.path, "finalVidOutput.mov")
 }
+
+// func (fv *FinalVideo) CreateTime() {
+// 	fv.hook.startTime = ""
+// 	fv.hook.endTime = ""
+// 	fv.subcription.startTime = ""
+// 	fv.subcription.endTime = ""
+// 	fv.body.startTime = ""
+// 	fv.body.endTime = ""
+// 	fv.outro.startTime = ""
+// 	fv.outro.endTime = ""
+// }
+
+// func (fv *FinalVideo) PrepareVids() {
+// 	fv.hook.inpoint
+// 	fv.hook.outpoint
+// 	fv.subcription.inpoint
+// 	fv.subcription.outpoint
+// 	fv.body.inpoint
+// 	fv.body.outpoint
+// 	fv.outro.inpoint
+// 	fv.outro.outpoint
+// }
 
 func (fv *FinalVideo) CreateConcatFile() {
 	content := fv.hook.filename + "\n" + fv.subcription.filename + "\n" + fv.body.filename + "\n" + fv.outro.filename
@@ -621,4 +643,16 @@ func checkRecordingDir(path string) {
 		fmt.Printf("Created directory %s", path)
 	}
 
+}
+
+func converTimeToDecimal(timeString string) (float64, error) {
+	var hour, min, seconds float64
+
+	_, err := fmt.Sscanf(timeString, "%f:%f:%f", &hour, &min, &seconds)
+	if err != nil {
+		return 0, fmt.Errorf("Invalid timestamp %v", err)
+	}
+
+	totalSeconds := (hour * 3600) + (min * 60) + seconds
+	return totalSeconds, nil
 }
