@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -100,7 +101,13 @@ type ImageDir struct {
 }
 
 func main() {
-	createFinalVideo("recordings/FinalVideo")
+	// createFinalVideo("recordings/FinalVideo")
+	bodyVideos, err := createBodyVid("recordings/FinalVideo/body")
+	if err != nil {
+		log.Fatalf("Failed to read videos: %v", err)
+	}
+
+	fmt.Printf("Softed videos %v\n", bodyVideos)
 
 	//*******************Dir*******************
 	// searchDir := "./slides"
@@ -708,5 +715,45 @@ func concatVideo(fileInput string, outputName string) {
 		fmt.Printf("ffmpeg failed: %v (stderr: %s)\n", err, errBuffer.String())
 		return
 	}
+
+}
+
+func createBodyVid(path string) ([]string, error) {
+	var files []string
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("Error %v", err)
+	}
+
+	for _, file := range entries {
+		filename := file.Name()
+		if strings.Contains(strings.ToLower(filename), ".mp4") {
+			files = append(files, filename)
+		}
+	}
+
+	//SORT THE FILES NUMERICALLY
+	slices.SortFunc(files, func(a, b string) int {
+		numStrA := strings.TrimSuffix(strings.ToLower(a), ".mp4")
+		numStrB := strings.TrimSuffix(strings.ToLower(b), ".mp4")
+
+		valA, errA := strconv.ParseFloat(numStrA, 64)
+		valB, errB := strconv.ParseFloat(numStrB, 64)
+
+		if errA != nil || errB != nil {
+			return strings.Compare(numStrA, numStrB)
+		}
+
+		if valA < valB {
+			return -1
+		} else if valA > valB {
+			return 1
+		}
+
+		return 0
+
+	})
+
+	return files, nil
 
 }
