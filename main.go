@@ -17,12 +17,12 @@ type InputVid struct {
 }
 
 type FinalVideo struct {
-	hook        InputVid
-	subcription InputVid
-	body        InputVid
-	outro       InputVid
-	output      InputVid
-	path        string
+	hook      InputVid
+	subscribe InputVid
+	body      InputVid
+	outro     InputVid
+	output    InputVid
+	path      string
 }
 
 func (fv *FinalVideo) CreateFinalVid() {
@@ -34,18 +34,18 @@ func (fv *FinalVideo) CreateFinalVid() {
 
 func (fv *FinalVideo) LoadPaths() {
 
-	fv.hook.filename = filepath.Join(fv.path, "hook.mov")
-	fv.subcription.filename = filepath.Join(fv.path, "subcription.mov")
-	fv.body.filename = filepath.Join(fv.path, "body.mov")
-	fv.outro.filename = filepath.Join(fv.path, "outro.mov")
-	fv.output.filename = filepath.Join(fv.path, "finalVidOutput.mov")
+	fv.hook.filename = filepath.Join(fv.path, "hook.mp4")
+	fv.subscribe.filename = filepath.Join(fv.path, "subscribe.mp4")
+	fv.body.filename = filepath.Join(fv.path, "body.mp4")
+	fv.outro.filename = filepath.Join(fv.path, "outro.mp4")
+	fv.output.filename = filepath.Join(fv.path, "finalVidOutput.mp4")
 }
 
 // func (fv *FinalVideo) CreateTime() {
 // 	fv.hook.startTime = ""
 // 	fv.hook.endTime = ""
-// 	fv.subcription.startTime = ""
-// 	fv.subcription.endTime = ""
+// 	fv.subscribe.startTime = ""
+// 	fv.subscribe.endTime = ""
 // 	fv.body.startTime = ""
 // 	fv.body.endTime = ""
 // 	fv.outro.startTime = ""
@@ -55,8 +55,8 @@ func (fv *FinalVideo) LoadPaths() {
 // func (fv *FinalVideo) PrepareVids() {
 // 	fv.hook.inpoint
 // 	fv.hook.outpoint
-// 	fv.subcription.inpoint
-// 	fv.subcription.outpoint
+// 	fv.subscribe.inpoint
+// 	fv.subscribe.outpoint
 // 	fv.body.inpoint
 // 	fv.body.outpoint
 // 	fv.outro.inpoint
@@ -64,7 +64,7 @@ func (fv *FinalVideo) LoadPaths() {
 // }
 
 func (fv *FinalVideo) CreateConcatFile() {
-	content := fv.hook.filename + "\n" + fv.subcription.filename + "\n" + fv.body.filename + "\n" + fv.outro.filename
+	content := fv.hook.filename + "\n" + fv.subscribe.filename + "\n" + fv.body.filename + "\n" + fv.outro.filename
 	txtBody := []byte(content)
 	txtPath := filepath.Join(fv.path, "vidConcatList.txt")
 	err := os.WriteFile(txtPath, txtBody, 0644)
@@ -91,6 +91,7 @@ type ImageDir struct {
 
 func main() {
 	createFinalVideo("recordings/finalVideo/body")
+
 	//*******************Dir*******************
 	// searchDir := "./slides"
 	// var collection ImageDir
@@ -130,8 +131,8 @@ func main() {
 	// // getBestFrame(&inputVid, "test1.png")
 	// extractAudio(`Palworld_Dev_ants_To_Delete_Your_Data_audio.mp4`, `Palworld_Delete.mp3`).Run()
 	// extractAudio(`Palworld_Dev_Wants_To_Delete_Your_Data_audio2.mp4`, `Palworld_Delete2.mp3`).Run()
-	copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\test.mp4`, "00:19:24", "00:20:07").Run()
-	copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\Chillet_Fight.mp4`, "00:21:35", "00:23:55").Run()
+	// copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\test.mp4`, "00:19:24", "00:20:07").Run()
+	// copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\Chillet_Fight.mp4`, "00:21:35", "00:23:55").Run()
 	// concatBulkVideo(`recordings/quick_level/vidConcat.txt`, `recordings/quick_level/concat_output.mp4`)
 
 	// copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\Palworld:rocks.mp4`, "00:42:48", "00:43:00").Run()
