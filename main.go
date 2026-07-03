@@ -37,11 +37,12 @@ func (fv *FinalVideo) LoadPaths() {
 	fv.subcription.filename = filepath.Join(fv.path, "subcription.mov")
 	fv.body.filename = filepath.Join(fv.path, "body.mov")
 	fv.outro.filename = filepath.Join(fv.path, "outro.mov")
-	fv.output.filename = filepath.Join(fv.path, "output.mov")
+	fv.output.filename = filepath.Join(fv.path, "finalVidOutput.mov")
 }
 
 func (fv *FinalVideo) CreateConcatFile() {
-	txtBody := []byte(fv.hook.filename)
+	content := fv.hook.filename + "\n" + fv.subcription.filename + "\n" + fv.body.filename + "\n" + fv.outro.filename
+	txtBody := []byte(content)
 	txtPath := filepath.Join(fv.path, "vidConcatList.txt")
 	err := os.WriteFile(txtPath, txtBody, 0644)
 
