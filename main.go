@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +14,41 @@ import (
 
 type InputVid struct {
 	filename string
+}
+
+type FinalVideo struct {
+	hook        InputVid
+	subcription InputVid
+	body        InputVid
+	outro       InputVid
+	output      InputVid
+	path        string
+}
+
+func (fv *FinalVideo) CreateFinalVid() {
+	fv.LoadPaths()
+	fv.CreateConcatFile()
+
+}
+
+func (fv *FinalVideo) LoadPaths() {
+
+	fv.hook.filename = filepath.Join(fv.path, "hook.mov")
+	fv.subcription.filename = filepath.Join(fv.path, "subcription.mov")
+	fv.body.filename = filepath.Join(fv.path, "body.mov")
+	fv.outro.filename = filepath.Join(fv.path, "outro.mov")
+	fv.output.filename = filepath.Join(fv.path, "output.mov")
+}
+
+func (fv *FinalVideo) CreateConcatFile() {
+	txtBody := []byte(fv.hook.filename)
+	txtPath := filepath.Join(fv.path, "vidConcatList.txt")
+	err := os.WriteFile(txtPath, txtBody, 0644)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func (i *InputVid) Clean() {
@@ -29,7 +66,10 @@ type ImageDir struct {
 }
 
 func main() {
-	checkRecordingDir()
+	var finalVid FinalVideo
+	finalVid.path = "recordings/finalVideo/body"
+	checkRecordingDir(finalVid.path)
+	finalVid.CreateFinalVid()
 	//*******************Dir*******************
 	// searchDir := "./slides"
 	// var collection ImageDir
@@ -542,21 +582,42 @@ func CropEdges(input, output string, horizontalPad, verticalPad int) error {
 	return nil
 }
 
-func checkRecordingDir() {
-	dirPath := "./recordings/finalVideo/body"
+// func readDirContents(path string) ([]string, error) {
+// 	var files []string
+// 	entries, err := os.ReadDir(path)
 
-	_, err := os.Stat(dirPath)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	for _, entry := range entries {
+// 		var filename = entry.Name()
+// 		if strings.Compare(filename, "hook.mov") {
+
+// 		}
+// 		if strings.HasSuffix(strings.ToLower(filename), ".mov") {
+// 			files = append(files, filename)
+// 		}
+// 		if strings.HasSuffix(strings.ToLower(filename), ".txt") {
+// 			files = append(files, filename)
+// 		}
+// 	}
+// }
+
+func checkRecordingDir(path string) {
+
+	_, err := os.Stat(path)
 	if err == nil {
-		fmt.Printf("%s exists\n", dirPath)
+		fmt.Printf("%s exists\n", path)
 		return
 	}
 
-	err = os.MkdirAll(dirPath, 0755)
+	err = os.MkdirAll(path, 0755)
 
 	if err != nil {
-		fmt.Println("Cannot verify if path already exists")
+		log.Fatalf("Cannot verify if path already exists")
 	} else {
-		fmt.Printf("Created directory %s", dirPath)
+		fmt.Printf("Created directory %s", path)
 	}
 
 }
