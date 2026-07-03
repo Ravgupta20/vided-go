@@ -17,27 +17,37 @@ type InputVid struct {
 }
 
 type FinalVideo struct {
-	hook      InputVid
-	subscribe InputVid
-	body      InputVid
-	outro     InputVid
-	output    InputVid
-	path      string
+	hook       InputVid
+	subscribe  InputVid
+	body       InputVid
+	outro      InputVid
+	output     InputVid
+	path       string
+	concatFile string
 }
 
 func (fv *FinalVideo) CreateFinalVid() {
 	fv.LoadPaths()
 	// fv.PrepareVids()
 	fv.CreateConcatFile()
-	concatVideo(fv.path, fv.output.filename)
+	concatVideo(fv.concatFile, fv.output.filename)
 }
 
-func (fv *FinalVideo) LoadPaths() {
+func (fv *FinalVideo) LoadFullPaths() {
 
 	fv.hook.filename = filepath.Join(fv.path, "hook.mp4")
 	fv.subscribe.filename = filepath.Join(fv.path, "subscribe.mp4")
 	fv.body.filename = filepath.Join(fv.path, "body.mp4")
 	fv.outro.filename = filepath.Join(fv.path, "outro.mp4")
+	fv.output.filename = filepath.Join(fv.path, "finalVidOutput.mp4")
+}
+
+func (fv *FinalVideo) LoadPaths() {
+
+	fv.hook.filename = "hook.mp4"
+	fv.subscribe.filename = "subscribe.mp4"
+	fv.body.filename = "body.mp4"
+	fv.outro.filename = "outro.mp4"
 	fv.output.filename = filepath.Join(fv.path, "finalVidOutput.mp4")
 }
 
@@ -64,7 +74,7 @@ func (fv *FinalVideo) LoadPaths() {
 // }
 
 func (fv *FinalVideo) CreateConcatFile() {
-	content := fv.hook.filename + "\n" + fv.subscribe.filename + "\n" + fv.body.filename + "\n" + fv.outro.filename
+	content := "file '" + fv.hook.filename + "'\nfile '" + fv.subscribe.filename + "'\nfile '" + fv.body.filename + "'\nfile '" + fv.outro.filename + "'"
 	txtBody := []byte(content)
 	txtPath := filepath.Join(fv.path, "vidConcatList.txt")
 	err := os.WriteFile(txtPath, txtBody, 0644)
@@ -72,7 +82,7 @@ func (fv *FinalVideo) CreateConcatFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	fv.concatFile = txtPath
 }
 
 func (i *InputVid) Clean() {
@@ -90,7 +100,7 @@ type ImageDir struct {
 }
 
 func main() {
-	createFinalVideo("recordings/finalVideo/body")
+	createFinalVideo("recordings/FinalVideo")
 
 	//*******************Dir*******************
 	// searchDir := "./slides"
