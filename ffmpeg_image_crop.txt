@@ -1,0 +1,19 @@
+Specific Coordinate Crop (Top-Left Origin)To crop an image to exact dimensions 
+and place the starting corner at a specific coordinate:
+- ffmpeg -i input.jpg -vf "crop=400:300:100:50" output.jpg
+
+400:300: The width and height of the cropped image.100:50: 
+The X and Y coordinates of the top-left corner of your crop area.
+
+Centered CropIf you want to crop an area from the exact center of the image, 
+you don't need to do the math yourself. You can use built-in FFmpeg variables 
+(in_w for width, in_h for height):
+
+- ffmpeg -i input.jpg -vf "crop=400:300:(in_w-400)/2:(in_h-300)/2" output.jpg
+
+
+Crop Relative to Input Size (e.g., Cropping Edges)Instead of hardcoding absolute pixel dimensions, 
+you can do math relative to the input image using iw (input width) and ih (input height). 
+This command crops 50 pixels off every edge:
+
+- ffmpeg -i input.jpg -vf "crop=iw-100:ih-100:50:50" output.jpg
