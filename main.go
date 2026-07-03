@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -28,6 +29,7 @@ type ImageDir struct {
 }
 
 func main() {
+	checkRecordingDir()
 	//*******************Dir*******************
 	// searchDir := "./slides"
 	// var collection ImageDir
@@ -112,12 +114,12 @@ func main() {
 	// err := specificCoordinateCrop("/Users/ravi/Desktop/projects/github/vided-go/slides/slides_002.png", "output.png", 900, 500, 100, 50)
 
 	// err := CenteredCrop("/Users/ravi/Desktop/projects/github/vided-go/slides/slides_002.png", "output_centered.jpg", 1200, 800)
-	err := CropEdges("/Users/ravi/Desktop/projects/github/vided-go/slides/slides_002.png", "output_trimmed.jpg", 100, 200)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	fmt.Println("Crop successful!")
+	// err := CropEdges("/Users/ravi/Desktop/projects/github/vided-go/slides/slides_002.png", "output_trimmed.jpg", 100, 200)
+	// if err != nil {
+	// 	fmt.Println("Error:", err)
+	// 	return
+	// }
+	// fmt.Println("Crop successful!")
 
 }
 
@@ -538,4 +540,23 @@ func CropEdges(input, output string, horizontalPad, verticalPad int) error {
 		return fmt.Errorf("ffmpeg edge crop failed: %w (stderr: %s)", err, errBuf.String())
 	}
 	return nil
+}
+
+func checkRecordingDir() {
+	dirPath := "./recordings/finalVideo/body"
+
+	_, err := os.Stat(dirPath)
+	if err == nil {
+		fmt.Printf("%s exists\n", dirPath)
+		return
+	}
+
+	err = os.MkdirAll(dirPath, 0755)
+
+	if err != nil {
+		fmt.Println("Cannot verify if path already exists")
+	} else {
+		fmt.Printf("Created directory %s", dirPath)
+	}
+
 }
