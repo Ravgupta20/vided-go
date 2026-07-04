@@ -108,6 +108,8 @@ func main() {
 	}
 
 	fmt.Printf("Softed videos %v\n", bodyVideos)
+	concatVidFile := createConcatFileFromList("recordings/FinalVideo/body", bodyVideos)
+	concatVideo(concatVidFile, "recordings/FinalVideo/body/output.mp4")
 
 	//*******************Dir*******************
 	// searchDir := "./slides"
@@ -754,6 +756,24 @@ func createBodyVid(path string) ([]string, error) {
 
 	})
 
+	for i, file := range files {
+		files[i] = filepath.Join(path, file)
+	}
+
 	return files, nil
 
+}
+
+func createConcatFileFromList(path string, videos []string) (concatFile string) {
+	var content string
+	for _, video := range videos {
+		content = content + "file " + "'" + video + "'\n"
+	}
+	txtBody := []byte(content)
+	concatFile = filepath.Join(path, "bodyvidConcat.txt")
+	err := os.WriteFile(concatFile, txtBody, 0644)
+	if err != nil {
+		log.Fatalf("Failed to write file %v", err)
+	}
+	return concatFile
 }
