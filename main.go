@@ -102,14 +102,20 @@ type ImageDir struct {
 
 func main() {
 	// createFinalVideo("recordings/FinalVideo")
-	bodyVideos, err := createBodyVid("recordings/FinalVideo/body")
-	if err != nil {
-		log.Fatalf("Failed to read videos: %v", err)
-	}
+	// createFinalVideoBody()
+	createFinalVideoRobust()
+	// bodyVideos, err := createBodyVid("recordings/FinalVideo/body")
+	// if err != nil {
+	// 	log.Fatalf("Failed to read videos: %v", err)
+	// }
 
-	fmt.Printf("Softed videos %v\n", bodyVideos)
-	concatVidFile := createConcatFileFromList("recordings/FinalVideo/body", bodyVideos)
-	concatVideo(concatVidFile, "recordings/FinalVideo/body/output.mp4")
+	// fmt.Printf("Softed videos %v\n", bodyVideos)
+	// concatVidFile := createConcatFileFromList("recordings/FinalVideo/body", bodyVideos)
+	// concatVideo(concatVidFile, "recordings/FinalVideo/body.mp4")
+
+	// createSubVideo("4.0")
+
+	// concatVideo(`C:\github\vided-go\recordings\FinalVideo\body\1.0\concatTxtFile.txt`, `C:\github\vided-go\recordings\FinalVideo\body\1.0\output_1.mp4`)
 
 	//*******************Dir*******************
 	// searchDir := "./slides"
@@ -154,7 +160,7 @@ func main() {
 	// copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\Chillet_Fight.mp4`, "00:21:35", "00:23:55").Run()
 	// concatBulkVideo(`recordings/quick_level/vidConcat.txt`, `recordings/quick_level/concat_output.mp4`)
 
-	// copyVid(`C:\github\vided-go\quick_level.mp4`, `C:\github\vided-go\recordings\quick_level\Palworld:rocks.mp4`, "00:42:48", "00:43:00").Run()
+	// copyVid(`C:\github\vided-go\recordings\FinalVideo\body\5.0.mp4`, `C:\github\vided-go\recordings\FinalVideo\body\_5.0.mp4`, "", "00:00:25").Run()
 	// copyVid(`C:\github\vided-go\Palworld_Delete.mp3`, `Palworld_Delete_audio.mp3`, "", "00:00:22").Run()
 	// copyVid(`C:\github\vided-go\Palworld_Delete2.mp3`, `Palworld_Delete_audio2.mp3`, "", "00:00:34").Run()
 	// copyVid(`C:\github\vided-go\Palworld_Delete2.mp3`, `Palworld_Delete2.mp3`, "", "00:00:52").Run()
@@ -756,9 +762,9 @@ func createBodyVid(path string) ([]string, error) {
 
 	})
 
-	for i, file := range files {
-		files[i] = filepath.Join(path, file)
-	}
+	// for i, file := range files {
+	// 	files[i] = filepath.Join(path, file)
+	// }
 
 	return files, nil
 
@@ -776,4 +782,203 @@ func createConcatFileFromList(path string, videos []string) (concatFile string) 
 		log.Fatalf("Failed to write file %v", err)
 	}
 	return concatFile
+}
+
+func concatVideoWithAudio(concatTxtFile, audioFile, outputFile string) {
+	cmd := exec.Command("ffmpeg",
+		"-y", // Overwrite output file if it exists
+		"-f", "concat",
+		"-safe", "0",
+		"-i", concatTxtFile, // Input 0: Video text list
+		"-i", audioFile, // Input 1: Audio track
+		"-map", "0:v", // Map video from input 0
+		"-map", "1:a", // Map audio from input 1
+		"-c:v", "copy", // Stream copy video (fast)
+		"-c:a", "aac", // Encode audio to AAC
+		"-shortest", // Match duration of the shorter clip
+		outputFile,
+	)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("FFmpeg failed: %v\nStderr: %s", err, stderr.String())
+	}
+}
+
+func overlayConcatOnVideo(backgroundVid, concatTxtFile, outputFile string) {
+	cmd := exec.Command("ffmpeg",
+		"-y",
+		"-i", backgroundVid, // Input 0: Base video
+		"-f", "concat", "-safe", "0", "-i", concatTxtFile, // Input 1: Concat text file
+		"-filter_complex", "[0:v][1:v]overlay=0:0:shortest=1[outv]", // Blends video streams
+		"-map", "[outv]", // Use the blended video
+		"-map", "0:a", // Use original background audio
+		"-c:a", "copy", // Copy audio codec (fast)
+		outputFile,
+	)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("FFmpeg overlay failed: %v\nStderr: %s", err, stderr.String())
+	}
+}
+
+func createSegment(vidNum string) {
+	audioPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\body\%s\audio.mp4`, vidNum)
+	slides := []string{
+		`C:\github\vided-go\recordings\FinalVideo\body\4.0\slide_one.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\body\4.0\slide_two.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\body\4.0\slide_three.mp4`,
+	}
+	outputPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\body\%s.mp4`, vidNum)
+	overlayConcatOnVideoSanitized(audioPath, slides, outputPath)
+}
+
+func createFinalVideoBody() {
+	// audioPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\body\%s\audio.mp4`)
+	slides := []string{
+		`C:\github\vided-go\recordings\FinalVideo\body\1.0.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\body\2.0.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\body\3.0.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\body\4.0.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\body\5.0.mp4`,
+	}
+	outputPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\body.mp4`)
+	concatVideosRobust(slides, outputPath)
+}
+
+func createFinalVideoRobust() {
+	// audioPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\body\%s\audio.mp4`)
+	slides := []string{
+		`C:\github\vided-go\recordings\FinalVideo\hook.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\subscribe.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\body.mp4`,
+		`C:\github\vided-go\recordings\FinalVideo\outro.mp4`,
+	}
+	outputPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\final_output.mp4`)
+	concatVideosRobust(slides, outputPath)
+}
+
+func overlayConcatOnVideoSanitized(backgroundVid string, slideFiles []string, outputFile string) {
+	if len(slideFiles) == 0 {
+		log.Fatalf("Error: No slide files provided for concatenation.")
+	}
+
+	// Base FFmpeg arguments
+	args := []string{"-y", "-i", backgroundVid}
+
+	// 1. Dynamically add each slide file as an individual input
+	for _, file := range slideFiles {
+		args = append(args, "-i", file)
+	}
+
+	// 2. Build the complex filtergraph to sanitize and concatenate slides
+	// We will force them all to a standard: 1920x1080 resolution, 30fps, and yuv420p format.
+	var filtergraph strings.Builder
+
+	for i := range slideFiles {
+		// Input index for slides starts at 1, because backgroundVid is index 0
+		slideIdx := i + 1
+
+		// Sanitize each slide: scale/pad to 1920x1080, force 30fps, normalize format
+		fmt.Fprintf(&filtergraph,
+			"[%d:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p[v%d];",
+			slideIdx, i,
+		)
+	}
+
+	// Append the sanitized streams into the concat filter
+	for i := range slideFiles {
+		fmt.Fprintf(&filtergraph, "[v%d]", i)
+	}
+	// Perform the concatenation of slides
+	fmt.Fprintf(&filtergraph, "concat=n=%d:v=1:a=0[concated_slides];", len(slideFiles))
+
+	// Finally, overlay the combined slides stream over the background video (index 0)
+	filtergraph.WriteString("[0:v][concated_slides]overlay=0:0:shortest=1[outv]")
+
+	// 3. Assemble remaining mapping and execution arguments
+	args = append(args,
+		"-filter_complex", filtergraph.String(),
+		"-map", "[outv]",
+		"-map", "0:a",
+		"-c:a", "copy",
+		outputFile,
+	)
+
+	cmd := exec.Command("ffmpeg", args...)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("FFmpeg overlay failed: %v\nStderr: %s", err, stderr.String())
+	}
+}
+
+func concatVideosRobust(inputFiles []string, outputFile string) {
+	if len(inputFiles) == 0 {
+		log.Fatalf("Error: No input files provided for concatenation.")
+	}
+
+	// Base FFmpeg arguments
+	args := []string{"-y"}
+
+	// 1. Dynamically add each video file as an individual input
+	for _, file := range inputFiles {
+		args = append(args, "-i", file)
+	}
+
+	// 2. Build the complex filtergraph to sanitize and concatenate video + audio
+	// We force all videos to 1920x1080, 30fps, yuv420p, and stereo audio at 44.1kHz
+	var filtergraph strings.Builder
+
+	for i := range inputFiles {
+		// Sanitize the video stream [i:v] -> [v_sanitized_i]
+		// Scale/pad to 1920x1080, force 30fps, normalize format
+		fmt.Fprintf(&filtergraph,
+			"[%d:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p[v%d];",
+			i, i,
+		)
+
+		// Sanitize the audio stream [i:a] -> [a_sanitized_i]
+		// This forces audio to a consistent channel layout (stereo) and sample rate (44100Hz)
+		fmt.Fprintf(&filtergraph,
+			"[%d:a]aformat=channel_layouts=stereo:sample_rates=44100[a%d];",
+			i, i,
+		)
+	}
+
+	// 3. Pipe all the sanitized video and audio tags into the concat filter
+	for i := range inputFiles {
+		fmt.Fprintf(&filtergraph, "[v%d][a%d]", i, i)
+	}
+
+	// Perform the concatenation (v=1 means 1 video track out, a=1 means 1 audio track out)
+	fmt.Fprintf(&filtergraph, "concat=n=%d:v=1:a=1[outv][outa]", len(inputFiles))
+
+	// 4. Assemble remaining mapping and execution arguments
+	args = append(args,
+		"-filter_complex", filtergraph.String(),
+		"-map", "[outv]",
+		"-map", "[outa]",
+		outputFile,
+	)
+
+	cmd := exec.Command("ffmpeg", args...)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("FFmpeg concatenation failed: %v\nStderr: %s", err, stderr.String())
+	}
 }
