@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,14 @@ import (
 
 type InputVid struct {
 	filename string
+}
+
+type FinalVid struct {
+	Final []string `json:"final"`
+	Hook  []string `json:"hook"`
+	Sub   []string `json:"sub"`
+	Body  []string `json:"body"`
+	Outro []string `json:"outro"`
 }
 
 type FinalVideo struct {
@@ -101,9 +110,33 @@ type ImageDir struct {
 }
 
 func main() {
+
+	fileBytes, err := os.ReadFile("concat.json")
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	var fv FinalVid
+
+	err = json.Unmarshal(fileBytes, &fv)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+
+	// Access data directly
+	fmt.Printf("Loaded vid: %s \n", fv.Hook)
 	// createFinalVideo("recordings/FinalVideo")
 	// createFinalVideoBody()
-	createFinalVideoRobust()
+
+	// slides := []string{
+	// 	`C:\github\vided-go\recordings\FinalVideo\body\1.0.mp4`,
+	// 	`C:\github\vided-go\recordings\FinalVideo\body\2.0.mp4`,
+	// 	`C:\github\vided-go\recordings\FinalVideo\body\3.0.mp4`,
+	// 	`C:\github\vided-go\recordings\FinalVideo\body\4.0.mp4`,
+	// 	`C:\github\vided-go\recordings\FinalVideo\body\5.0.mp4`,
+	// }
+	// createFinalVideoBody(slides)
+	// createFinalVideoRobust()
 	// bodyVideos, err := createBodyVid("recordings/FinalVideo/body")
 	// if err != nil {
 	// 	log.Fatalf("Failed to read videos: %v", err)
@@ -840,16 +873,8 @@ func createSegment(vidNum string) {
 	overlayConcatOnVideoSanitized(audioPath, slides, outputPath)
 }
 
-func createFinalVideoBody() {
-	// audioPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\body\%s\audio.mp4`)
-	slides := []string{
-		`C:\github\vided-go\recordings\FinalVideo\body\1.0.mp4`,
-		`C:\github\vided-go\recordings\FinalVideo\body\2.0.mp4`,
-		`C:\github\vided-go\recordings\FinalVideo\body\3.0.mp4`,
-		`C:\github\vided-go\recordings\FinalVideo\body\4.0.mp4`,
-		`C:\github\vided-go\recordings\FinalVideo\body\5.0.mp4`,
-	}
-	outputPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\body.mp4`)
+func createFinalVideoBody(slides []string) {
+	outputPath := `C:\github\vided-go\recordings\FinalVideo\body.mp4`
 	concatVideosRobust(slides, outputPath)
 }
 
@@ -861,7 +886,7 @@ func createFinalVideoRobust() {
 		`C:\github\vided-go\recordings\FinalVideo\body.mp4`,
 		`C:\github\vided-go\recordings\FinalVideo\outro.mp4`,
 	}
-	outputPath := fmt.Sprintf(`C:\github\vided-go\recordings\FinalVideo\final_output.mp4`)
+	outputPath := `C:\github\vided-go\recordings\FinalVideo\final_output.mp4`
 	concatVideosRobust(slides, outputPath)
 }
 
