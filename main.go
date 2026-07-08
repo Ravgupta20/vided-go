@@ -123,6 +123,9 @@ func main() {
 		log.Fatalf("Failed to unmarshal JSON: %v", err)
 	}
 
+	for _, vid := range fv.Hook {
+		fmt.Println(vid)
+	}
 	// Access data directly
 	fmt.Printf("Loaded vid: %s \n", fv.Hook)
 	// createFinalVideo("recordings/FinalVideo")
