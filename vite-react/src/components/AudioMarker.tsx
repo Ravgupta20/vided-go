@@ -171,7 +171,7 @@ const { handleOpenDirectory, images } = useImager();
         <audio 
           ref={audioRef}
           controls
-          src="/public/audio/july_release.mp3"
+          src="/audio/july_release.mp3"
           style={{ width: '100%', maxWidth: '600px', borderRadius: '8px', outline: 'none', marginBottom: '16px' }}
         />
         

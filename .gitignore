@@ -64,6 +64,10 @@ node_modules
 dist
 dist-ssr
 *.local
+*.tsbuildinfo
+
+# Large media assets — kept centrally in C:\github\media\vided-go\ instead
+vite-react/public/audio/*.mp3
 
 # Editor directories and files
 .vscode/*
