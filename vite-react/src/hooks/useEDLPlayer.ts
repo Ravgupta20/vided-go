@@ -9,6 +9,11 @@ const PRESEEK_LEAD_SECONDS = 0.5;
 const SEGMENT_END_EPSILON = 0.03;
 const SEEK_EPSILON = 0.05;
 
+export interface LoopRegion {
+  start: number;
+  end: number;
+}
+
 // currentTime can't be set reliably before metadata is loaded, so queue the
 // seek for 'loadedmetadata' when the element isn't ready yet.
 function seekVideo(video: HTMLVideoElement, time: number) {
@@ -34,6 +39,7 @@ export function useEDLPlayer(
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolumeState] = useState(1);
+  const [loopRegion, setLoopRegionState] = useState<LoopRegion | null>(null);
 
   const timelineRef = useRef<TimelineSegment[]>([]);
   const activeIndexRef = useRef(0);
@@ -42,6 +48,7 @@ export function useEDLPlayer(
   const volumeRef = useRef(1);
   const lastReportedRef = useRef(0);
   const rafRef = useRef(0);
+  const loopRegionRef = useRef<LoopRegion | null>(null);
 
   const timeline = buildTimeline(segments);
   const duration = timeline.length > 0 ? timeline[timeline.length - 1].timelineEnd : 0;
@@ -116,6 +123,31 @@ export function useEDLPlayer(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segments]);
 
+  // Shared by the public `seek` and the loop-region wraparound: lands the
+  // virtual playhead at `time` and, if `resume`, keeps/starts playback.
+  const jumpTo = useCallback(
+    (time: number, resume: boolean) => {
+      const tl = timelineRef.current;
+      if (tl.length === 0) return;
+      const clamped = Math.min(Math.max(time, 0), tl[tl.length - 1].timelineEnd);
+      let idx = tl.findIndex((s) => clamped >= s.timelineStart && clamped < s.timelineEnd);
+      if (idx === -1) idx = tl.length - 1;
+      const seg = tl[idx];
+      const offset = clamped - seg.timelineStart;
+
+      activateSegment(idx, seg.inPoint + offset, { resume: false });
+
+      lastReportedRef.current = clamped;
+      setCurrentTime(clamped);
+
+      if (resume) {
+        const video = getVideo(seg.sourceId);
+        video?.play().catch(() => {});
+      }
+    },
+    [activateSegment, getVideo],
+  );
+
   useEffect(() => {
     const tick = () => {
       rafRef.current = requestAnimationFrame(tick);
@@ -132,6 +164,12 @@ export function useEDLPlayer(
         if (Math.abs(globalTime - lastReportedRef.current) > 0.03) {
           lastReportedRef.current = globalTime;
           setCurrentTime(globalTime);
+        }
+
+        const loop = loopRegionRef.current;
+        if (loop && globalTime >= loop.end - SEGMENT_END_EPSILON) {
+          jumpTo(loop.start, true);
+          return;
         }
 
         const nextIdx = idx + 1;
@@ -165,7 +203,7 @@ export function useEDLPlayer(
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [getVideo, activateSegment, drawFrame]);
+  }, [getVideo, activateSegment, drawFrame, jumpTo]);
 
   const togglePlay = useCallback(() => {
     const tl = timelineRef.current;
@@ -186,25 +224,23 @@ export function useEDLPlayer(
 
   const seek = useCallback(
     (time: number) => {
-      const tl = timelineRef.current;
-      if (tl.length === 0) return;
-      const clamped = Math.min(Math.max(time, 0), tl[tl.length - 1].timelineEnd);
-      let idx = tl.findIndex((s) => clamped >= s.timelineStart && clamped < s.timelineEnd);
-      if (idx === -1) idx = tl.length - 1;
-      const seg = tl[idx];
-      const offset = clamped - seg.timelineStart;
-
-      activateSegment(idx, seg.inPoint + offset, { resume: false });
-
-      lastReportedRef.current = clamped;
-      setCurrentTime(clamped);
-
-      if (isPlayingRef.current) {
-        const video = getVideo(seg.sourceId);
-        video?.play().catch(() => {});
-      }
+      const loop = loopRegionRef.current;
+      const target = loop ? Math.min(Math.max(time, loop.start), loop.end) : time;
+      jumpTo(target, isPlayingRef.current);
     },
-    [activateSegment, getVideo],
+    [jumpTo],
+  );
+
+  // Bounds playback to [start, end] — used for "just the transition" preview.
+  // Passing null goes back to playing/scrubbing the whole timeline from
+  // wherever the playhead currently sits.
+  const setLoopRegion = useCallback(
+    (region: LoopRegion | null) => {
+      loopRegionRef.current = region;
+      setLoopRegionState(region);
+      if (region) jumpTo(region.start, isPlayingRef.current);
+    },
+    [jumpTo],
   );
 
   const setVolume = useCallback(
@@ -218,5 +254,15 @@ export function useEDLPlayer(
     [getVideo],
   );
 
-  return { isPlaying, currentTime, duration, volume, togglePlay, seek, setVolume };
+  return {
+    isPlaying,
+    currentTime,
+    duration,
+    volume,
+    loopRegion,
+    togglePlay,
+    seek,
+    setVolume,
+    setLoopRegion,
+  };
 }

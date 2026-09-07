@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import PlaybackControls from '@/components/FilterPreview/PlaybackControls';
 import { useEDLPlayer } from '@/hooks/useEDLPlayer';
-import type { EDLSegment, EDLSource } from '@/types/edl';
+import { buildTimeline, type EDLSegment, type EDLSource } from '@/types/edl';
 import SegmentList from './SegmentList';
+
+const DEFAULT_TRANSITION_PAD_SECONDS = 3;
 
 export default function Concat() {
   const [sources, setSources] = useState<EDLSource[]>([]);
@@ -16,18 +18,48 @@ export default function Concat() {
   const [inPoint, setInPoint] = useState(0);
   const [outPoint, setOutPoint] = useState(0);
 
+  const [transitionMode, setTransitionMode] = useState(false);
+  const [transitionIndex, setTransitionIndex] = useState(0);
+  const [transitionPad, setTransitionPad] = useState(DEFAULT_TRANSITION_PAD_SECONDS);
+
   const builderVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoElsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
 
   const getVideo = useCallback((sourceId: string) => videoElsRef.current.get(sourceId) ?? null, []);
-  const { isPlaying, currentTime, duration, volume, togglePlay, seek, setVolume } = useEDLPlayer(
-    segments,
-    getVideo,
-    canvasRef,
-  );
+  const { isPlaying, currentTime, duration, volume, loopRegion, togglePlay, seek, setVolume, setLoopRegion } =
+    useEDLPlayer(segments, getVideo, canvasRef);
 
   const selectedSource = sources.find((s) => s.id === selectedSourceId) ?? null;
+
+  const timelineForUi = buildTimeline(segments);
+  const transitionCount = Math.max(0, timelineForUi.length - 1);
+  const clampedTransitionIndex = transitionCount > 0 ? Math.min(transitionIndex, transitionCount - 1) : 0;
+  const transitionFromSource = sources.find((s) => s.id === timelineForUi[clampedTransitionIndex]?.sourceId);
+  const transitionToSource = sources.find((s) => s.id === timelineForUi[clampedTransitionIndex + 1]?.sourceId);
+
+  // Recompute the loop window whenever transition mode, the chosen cut, the
+  // pad width, or the EDL itself changes — passing null hands playback back
+  // to the whole timeline from wherever the playhead currently sits.
+  useEffect(() => {
+    if (!transitionMode) {
+      setLoopRegion(null);
+      return;
+    }
+    const tl = buildTimeline(segments);
+    if (tl.length < 2) {
+      setLoopRegion(null);
+      return;
+    }
+    const idx = Math.min(transitionIndex, tl.length - 2);
+    const cut = tl[idx].timelineEnd;
+    const totalDuration = tl[tl.length - 1].timelineEnd;
+    setLoopRegion({
+      start: Math.max(0, cut - transitionPad),
+      end: Math.min(totalDuration, cut + transitionPad),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transitionMode, transitionIndex, transitionPad, segments]);
 
   // Picking a new source resets the in/out range to its full length once
   // its duration is known (loadedmetadata fires async on the hidden element).
@@ -110,14 +142,60 @@ export default function Concat() {
             )}
           </div>
 
+          {transitionCount > 0 && (
+            <div className="flex items-center gap-2 bg-card ring-1 ring-foreground/10 rounded-lg px-3 py-2 text-xs flex-wrap">
+              <Button
+                variant={transitionMode ? 'default' : 'secondary'}
+                size="sm"
+                onClick={() => setTransitionMode((v) => !v)}
+              >
+                {transitionMode ? 'Viewing: transition' : 'Viewing: whole video'}
+              </Button>
+
+              {transitionMode && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="icon-xs"
+                    onClick={() => setTransitionIndex((i) => Math.max(0, i - 1))}
+                    disabled={clampedTransitionIndex === 0}
+                  >
+                    ‹
+                  </Button>
+                  <span className="text-muted-foreground">
+                    Cut {clampedTransitionIndex + 1} of {transitionCount}: {transitionFromSource?.name ?? '?'} →{' '}
+                    {transitionToSource?.name ?? '?'}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon-xs"
+                    onClick={() => setTransitionIndex((i) => Math.min(transitionCount - 1, i + 1))}
+                    disabled={clampedTransitionIndex === transitionCount - 1}
+                  >
+                    ›
+                  </Button>
+                  <span className="text-muted-foreground ml-2">± pad (s)</span>
+                  <Input
+                    type="number"
+                    step={0.5}
+                    min={0.5}
+                    value={transitionPad}
+                    onChange={(e) => setTransitionPad(Math.max(0.1, Number(e.target.value)))}
+                    className="w-16"
+                  />
+                </>
+              )}
+            </div>
+          )}
+
           {segments.length > 0 && (
             <PlaybackControls
               isPlaying={isPlaying}
-              currentTime={currentTime}
-              duration={duration}
+              currentTime={loopRegion ? currentTime - loopRegion.start : currentTime}
+              duration={loopRegion ? loopRegion.end - loopRegion.start : duration}
               volume={volume}
               onTogglePlay={togglePlay}
-              onSeek={seek}
+              onSeek={(v) => seek(loopRegion ? loopRegion.start + v : v)}
               onVolumeChange={setVolume}
             />
           )}
