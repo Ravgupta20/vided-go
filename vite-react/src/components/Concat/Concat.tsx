@@ -9,7 +9,7 @@ import { useEDLPlayer } from '@/hooks/useEDLPlayer';
 import { buildTimeline, type EDLSegment, type EDLSource } from '@/types/edl';
 import SegmentList from './SegmentList';
 
-const DEFAULT_TRANSITION_PAD_SECONDS = 3;
+const DEFAULT_TRANSITION_PAD_SECONDS = 5;
 
 export default function Concat() {
   const [sources, setSources] = useState<EDLSource[]>([]);
@@ -52,11 +52,14 @@ export default function Concat() {
       return;
     }
     const idx = Math.min(transitionIndex, tl.length - 2);
-    const cut = tl[idx].timelineEnd;
-    const totalDuration = tl[tl.length - 1].timelineEnd;
+    const fromSeg = tl[idx];
+    const toSeg = tl[idx + 1];
+    const cut = fromSeg.timelineEnd; // === toSeg.timelineStart
+    // Clamp each side to its own clip's bounds — a clip shorter than the pad
+    // shows in full rather than letting the window spill into its neighbor.
     setLoopRegion({
-      start: Math.max(0, cut - transitionPad),
-      end: Math.min(totalDuration, cut + transitionPad),
+      start: Math.max(fromSeg.timelineStart, cut - transitionPad),
+      end: Math.min(toSeg.timelineEnd, cut + transitionPad),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitionMode, transitionIndex, transitionPad, segments]);
