@@ -144,6 +144,51 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* Restore useful browser-like defaults removed by Tailwind Preflight. */
+  h1 {
+    margin-block: 0.67em;
+    font-size: 2em;
+    font-weight: 700;
+  }
+
+  h2 {
+    margin-block: 0.83em;
+    font-size: 1.5em;
+    font-weight: 700;
+  }
+
+  h3 {
+    margin-block: 1em;
+    font-size: 1.17em;
+    font-weight: 700;
+  }
+
+  p {
+    margin-block: 1em;
+  }
+
+  label {
+    display: inline-block;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    border: 1px solid var(--input);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
   body {
     @apply bg-background text-foreground;
   }

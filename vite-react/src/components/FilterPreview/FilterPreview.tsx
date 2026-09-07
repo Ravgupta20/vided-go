@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useCanvasFilterRenderer } from '@/hooks/useCanvasFilterRenderer';
+import { useTranscriptGenerator } from '@/hooks/useTranscriptGenerator';
 import {
   DEFAULT_FILTER_SPEC,
   type FilterParams,
@@ -9,10 +10,17 @@ import {
 } from '@/types/filterSpec';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import VariantSelector from './VariantSelector';
 import FilterSliders from './FilterSliders';
 import JsonInjector from './JsonInjector';
 import PlaybackControls from './PlaybackControls';
+
+const TRANSCRIPT_STATUS_LABEL: Record<string, string> = {
+  uploading: 'Uploading to Vided…',
+  transcribing: 'Transcribing (WhisperX)… this can take a few minutes',
+  saving: 'Saving .json/.ass into vided-go/transcripts…',
+};
 
 export default function FilterPreview() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -20,6 +28,9 @@ export default function FilterPreview() {
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoName, setVideoName] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+
+  const { status: transcriptStatus, generate: generateTranscript } = useTranscriptGenerator();
 
   const [spec, setSpec] = useState<FilterSpecDocument>(DEFAULT_FILTER_SPEC);
   const [activeVariantId, setActiveVariantId] = useState<string>(DEFAULT_FILTER_SPEC.variants[0].id);
@@ -32,11 +43,11 @@ export default function FilterPreview() {
 
   useCanvasFilterRenderer(videoRef, canvasRef, activeFilters);
 
-  useEffect(() => {
-    return () => {
-      if (videoUrl) URL.revokeObjectURL(videoUrl);
-    };
-  }, [videoUrl]);
+  // useEffect(() => {
+  //   return () => {
+  //     if (videoUrl) URL.revokeObjectURL(videoUrl);
+  //   };
+  // }, [videoUrl]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,6 +55,7 @@ export default function FilterPreview() {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
     setVideoUrl(URL.createObjectURL(file));
     setVideoName(file.name);
+    setVideoFile(file);
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -86,11 +98,36 @@ export default function FilterPreview() {
     <div className="min-h-screen w-full bg-background text-foreground flex flex-col gap-4 p-6">
       <header className="flex items-center justify-between">
         <h1 className="text-lg font-bold font-heading">Real-Time Canvas Filter Preview</h1>
-        <label className="inline-flex items-center h-8 px-2.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] text-sm font-medium cursor-pointer transition-all">
-          {videoName ?? 'Choose MP4 file'}
-          <input type="file" accept="video/mp4" onChange={handleFileChange} className="hidden" />
-        </label>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            disabled={!videoFile || (transcriptStatus.phase !== 'idle' && transcriptStatus.phase !== 'done' && transcriptStatus.phase !== 'error')}
+            onClick={() => videoFile && generateTranscript(videoFile)}
+          >
+            Generate Transcript + Captions
+          </Button>
+          <label className="inline-flex items-center h-8 px-2.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] text-sm font-medium cursor-pointer transition-all">
+            {videoName ?? 'Choose MP4 file'}
+            <input type="file" accept="video/mp4" onChange={handleFileChange} className="hidden" />
+          </label>
+        </div>
       </header>
+
+      {transcriptStatus.phase !== 'idle' && (
+        <p className="text-xs -mt-2">
+          {transcriptStatus.phase === 'error' && (
+            <span className="text-destructive">Transcript generation failed: {transcriptStatus.message}</span>
+          )}
+          {transcriptStatus.phase === 'done' && (
+            <span className="text-emerald-500">
+              Saved {transcriptStatus.jsonName} and {transcriptStatus.assName} to vided-go/transcripts/
+            </span>
+          )}
+          {transcriptStatus.phase in TRANSCRIPT_STATUS_LABEL && (
+            <span className="text-muted-foreground">{TRANSCRIPT_STATUS_LABEL[transcriptStatus.phase]}</span>
+          )}
+        </p>
+      )}
 
       <div className="flex flex-1 gap-4 min-h-0">
         <div className="flex flex-col gap-3 flex-1 min-w-0">
@@ -134,9 +171,9 @@ export default function FilterPreview() {
                 onSelect={handleSelectVariant}
               />
               <Separator />
-              <FilterSliders filters={activeFilters} onChange={setActiveFilters} />
+              {/* <FilterSliders filters={activeFilters} onChange={setActiveFilters} /> */}
               <Separator />
-              <JsonInjector onApply={handleApplyJson} />
+              {/* <JsonInjector onApply={handleApplyJson} /> */}
             </div>
           </ScrollArea>
         </aside>
