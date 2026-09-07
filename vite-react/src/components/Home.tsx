@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Clapperboard, Crop, SlidersHorizontal, Waypoints } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 const TOOLS = [
@@ -6,16 +7,25 @@ const TOOLS = [
     to: '/filters',
     name: 'Filter Preview',
     description: 'Real-time canvas video filter preview with AI-generated variants',
+    icon: SlidersHorizontal,
+  },
+  {
+    to: '/concat',
+    name: 'Multi-Clip Preview',
+    description: 'Build an edit decision list across source files and preview it live — no render',
+    icon: Clapperboard,
   },
   {
     to: '/marker',
     name: 'Audio Marker',
     description: 'Time images to an audio track and export a slideshow timeline',
+    icon: Waypoints,
   },
   {
     to: '/crop',
     name: 'Image Cropper',
     description: 'Crop images for use as slides/overlays',
+    icon: Crop,
   },
 ];
 
@@ -28,7 +38,10 @@ export default function Home() {
           <Link key={tool.to} to={tool.to}>
             <Card className="h-full hover:ring-primary/50 transition-colors">
               <CardHeader>
-                <CardTitle>{tool.name}</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <tool.icon className="size-4 text-muted-foreground" />
+                  {tool.name}
+                </CardTitle>
                 <CardDescription>{tool.description}</CardDescription>
               </CardHeader>
             </Card>

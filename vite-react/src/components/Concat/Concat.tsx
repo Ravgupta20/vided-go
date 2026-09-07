@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, ChevronLeft, ChevronRight, Clapperboard, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PlaybackControls from '@/components/FilterPreview/PlaybackControls';
 import { useEDLPlayer } from '@/hooks/useEDLPlayer';
 import { buildTimeline, type EDLSegment, type EDLSource } from '@/types/edl';
+import { clipColorFor } from '@/lib/clipColors';
 import SegmentList from './SegmentList';
+import TimelineStrip from './TimelineStrip';
 
 const DEFAULT_TRANSITION_PAD_SECONDS = 5;
 
@@ -128,9 +131,20 @@ export default function Concat() {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex flex-col gap-4 p-6">
-      <header>
-        <h1 className="text-lg font-bold font-heading">Multi-Clip Preview (no render)</h1>
-        <p className="text-xs text-muted-foreground">
+      <header className="flex flex-col gap-1">
+        <Link
+          to="/"
+          className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="size-3.5" />
+          All tools
+        </Link>
+        <h1 className="text-lg font-bold font-heading flex items-center gap-2">
+          <Clapperboard className="size-5" />
+          Multi-Clip Preview
+          <span className="text-muted-foreground font-normal text-sm">(no render)</span>
+        </h1>
+        <p className="text-xs text-muted-foreground max-w-2xl">
           Builds an edit decision list across your source files and plays it back live in the browser —
           the sources are never concatenated into an actual file.
         </p>
@@ -141,9 +155,24 @@ export default function Concat() {
           <div className="relative flex-1 flex items-center justify-center bg-black rounded-lg overflow-hidden min-h-0 ring-1 ring-foreground/10">
             <canvas ref={canvasRef} className="max-w-full max-h-full h-auto w-auto" />
             {segments.length === 0 && (
-              <p className="absolute text-muted-foreground text-sm">Add segments to preview the sequence</p>
+              <div className="absolute flex flex-col items-center gap-2 text-muted-foreground">
+                <Clapperboard className="size-8 opacity-50" />
+                <p className="text-sm">Add segments to preview the sequence</p>
+              </div>
             )}
           </div>
+
+          {segments.length > 0 && (
+            <TimelineStrip
+              timeline={timelineForUi}
+              segments={segments}
+              sources={sources}
+              duration={duration}
+              currentTime={currentTime}
+              loopRegion={loopRegion}
+              onSeek={seek}
+            />
+          )}
 
           {transitionCount > 0 && (
             <div className="flex items-center gap-2 bg-card ring-1 ring-foreground/10 rounded-lg px-3 py-2 text-xs flex-wrap">
@@ -162,8 +191,9 @@ export default function Concat() {
                     size="icon-xs"
                     onClick={() => setTransitionIndex((i) => Math.max(0, i - 1))}
                     disabled={clampedTransitionIndex === 0}
+                    aria-label="Previous cut"
                   >
-                    ‹
+                    <ChevronLeft />
                   </Button>
                   <span className="text-muted-foreground">
                     Cut {clampedTransitionIndex + 1} of {transitionCount}: {transitionFromSource?.name ?? '?'} →{' '}
@@ -174,8 +204,9 @@ export default function Concat() {
                     size="icon-xs"
                     onClick={() => setTransitionIndex((i) => Math.min(transitionCount - 1, i + 1))}
                     disabled={clampedTransitionIndex === transitionCount - 1}
+                    aria-label="Next cut"
                   >
-                    ›
+                    <ChevronRight />
                   </Button>
                   <span className="text-muted-foreground ml-2">± pad (s)</span>
                   <Input
@@ -229,7 +260,8 @@ export default function Concat() {
               <CardTitle>Sources</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              <label className="inline-flex items-center h-8 px-2.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] text-sm font-medium cursor-pointer transition-all w-fit">
+              <label className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] text-sm font-medium cursor-pointer transition-all w-fit">
+                <Upload className="size-3.5" />
                 Add MP4 file(s)
                 <input
                   type="file"
@@ -242,15 +274,25 @@ export default function Concat() {
               {sources.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No sources loaded yet.</p>
               ) : (
-                <ul className="flex flex-col gap-1">
-                  {sources.map((s) => (
-                    <li key={s.id} className="text-xs flex justify-between gap-2">
-                      <span className="truncate">{s.name}</span>
-                      <span className="text-muted-foreground shrink-0 tabular-nums">
-                        {s.duration > 0 ? `${s.duration.toFixed(1)}s` : '…'}
-                      </span>
-                    </li>
-                  ))}
+                <ul className="flex flex-col gap-1.5">
+                  {sources.map((s) => {
+                    const color = clipColorFor(
+                      s.id,
+                      sources.map((x) => x.id),
+                    );
+                    return (
+                      <li key={s.id} className="text-xs flex items-center gap-2">
+                        <span
+                          className="size-2 rounded-full shrink-0"
+                          style={{ backgroundColor: color.bg }}
+                        />
+                        <span className="truncate flex-1">{s.name}</span>
+                        <span className="text-muted-foreground shrink-0 tabular-nums">
+                          {s.duration > 0 ? `${s.duration.toFixed(1)}s` : '…'}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </CardContent>
@@ -262,7 +304,7 @@ export default function Concat() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2.5">
               <select
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring"
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 value={selectedSourceId}
                 onChange={(e) => setSelectedSourceId(e.target.value)}
                 disabled={sources.length === 0}
@@ -326,12 +368,17 @@ export default function Concat() {
             </CardContent>
           </Card>
 
-          <Separator />
-
-          <div className="flex flex-col gap-2">
-            <h2 className="text-sm font-medium">Timeline ({segments.length} segment{segments.length === 1 ? '' : 's'})</h2>
-            <SegmentList segments={segments} sources={sources} onRemove={removeSegment} onMove={moveSegment} />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Timeline</CardTitle>
+              <CardDescription>
+                {segments.length} segment{segments.length === 1 ? '' : 's'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SegmentList segments={segments} sources={sources} onRemove={removeSegment} onMove={moveSegment} />
+            </CardContent>
+          </Card>
         </aside>
       </div>
     </div>
