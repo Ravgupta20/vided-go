@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useCanvasFilterRenderer } from '@/hooks/useCanvasFilterRenderer';
 import { useTranscriptGenerator } from '@/hooks/useTranscriptGenerator';
@@ -12,8 +12,6 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import VariantSelector from './VariantSelector';
-import FilterSliders from './FilterSliders';
-import JsonInjector from './JsonInjector';
 import PlaybackControls from './PlaybackControls';
 
 const TRANSCRIPT_STATUS_LABEL: Record<string, string> = {
@@ -32,7 +30,7 @@ export default function FilterPreview() {
 
   const { status: transcriptStatus, generate: generateTranscript } = useTranscriptGenerator();
 
-  const [spec, setSpec] = useState<FilterSpecDocument>(DEFAULT_FILTER_SPEC);
+  const [spec] = useState<FilterSpecDocument>(DEFAULT_FILTER_SPEC);
   const [activeVariantId, setActiveVariantId] = useState<string>(DEFAULT_FILTER_SPEC.variants[0].id);
   const [activeFilters, setActiveFilters] = useState<FilterParams>(DEFAULT_FILTER_SPEC.variants[0].filters);
 
@@ -64,12 +62,6 @@ export default function FilterPreview() {
   const handleSelectVariant = (variant: FilterVariant) => {
     setActiveVariantId(variant.id);
     setActiveFilters({ ...variant.filters });
-  };
-
-  const handleApplyJson = (newSpec: FilterSpecDocument) => {
-    setSpec(newSpec);
-    setActiveVariantId(newSpec.variants[0].id);
-    setActiveFilters({ ...newSpec.variants[0].filters });
   };
 
   const togglePlay = () => {

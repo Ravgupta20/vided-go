@@ -119,7 +119,7 @@ export function ImageList({ images, selectedImage, setSelectedImage, handleDelet
         ) : (
           <div style={{ textAlign: 'center', color: '#555' }}>
             <p style={{ fontSize: '44px', margin: '0 0 10px 0' }}>🖼️</p>
-            <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', tracking: '0.5px' }}>
+            <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', letterSpacing: '0.5px' }}>
               Select an image from the left sidebar to preview
             </p>
           </div>

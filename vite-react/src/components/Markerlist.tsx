@@ -1,6 +1,6 @@
 // components/Markerlist.tsx
 import { useState } from 'react';
-import { useAudioMarkers, TimelineMarker } from '../hooks/useAudioMarkers';
+import type { TimelineMarker } from '../hooks/useAudioMarkers';
 
 interface MarkerListProps {
     markers: TimelineMarker[];

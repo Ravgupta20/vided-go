@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAudioMarkers } from '../hooks/useAudioMarkers';
 import { MarkerList } from './Markerlist';
 import { useImager } from '../hooks/Imager';
@@ -69,7 +69,7 @@ const { handleOpenDirectory, images } = useImager();
       const currentSlot = marker[i];
       
       // 1. Get the actual assigned image filename, or grab the first image loaded in your pool as a real fallback
-      let fileName = (currentSlot as any).imageName || currentSlot.imageUrl;
+      let fileName = currentSlot.imageName || currentSlot.imageUrl;
       
       // Clean up the string path if it's a full URL path, extracting just "rel_xxx.png"
       if (fileName && fileName.includes('/')) {
@@ -112,14 +112,14 @@ const { handleOpenDirectory, images } = useImager();
   };
 
   const activeSelectedMarkerImage = selectedMarkerIndex !== -1 && marker[selectedMarkerIndex]?.imageUrl
-    ? { name: (marker[selectedMarkerIndex] as any).imageName || marker[selectedMarkerIndex].timestamp, url: marker[selectedMarkerIndex].imageUrl! }
+    ? { name: marker[selectedMarkerIndex].imageName || marker[selectedMarkerIndex].timestamp, url: marker[selectedMarkerIndex].imageUrl! }
     : null;
 
   const handleDeleteImagePlaceholder = () => {
     if (selectedMarkerIndex !== -1) {
       const updated = [...marker];
       updated[selectedMarkerIndex].imageUrl = null;
-      (updated[selectedMarkerIndex] as any).imageName = null;
+      updated[selectedMarkerIndex].imageName = null;
       setMarker(updated);
     }
   };

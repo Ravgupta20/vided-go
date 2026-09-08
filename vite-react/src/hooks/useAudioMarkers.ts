@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 export interface TimelineMarker {
   timestamp: string;
   imageUrl: string | null; // Starts empty, can hold an image from your pool
+  imageName?: string | null;
 }
 
 // Standard time formatting helper (MM:SS)
