@@ -3,6 +3,8 @@ export interface EDLSource {
   name: string;
   url: string;
   duration: number;
+  width?: number;
+  height?: number;
 }
 
 export interface EDLSegment {

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, Clapperboard, Upload } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Clapperboard, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PlaybackControls from '@/components/FilterPreview/PlaybackControls';
 import { useEDLPlayer } from '@/hooks/useEDLPlayer';
+import { useFfmpegExport } from '@/hooks/useFfmpegExport';
 import { buildTimeline, type EDLSegment, type EDLSource } from '@/types/edl';
 import { clipColorFor } from '@/lib/clipColors';
 import SegmentList from './SegmentList';
@@ -32,6 +33,14 @@ export default function Concat() {
   const getVideo = useCallback((sourceId: string) => videoElsRef.current.get(sourceId) ?? null, []);
   const { isPlaying, currentTime, duration, volume, loopRegion, togglePlay, seek, setVolume, setLoopRegion } =
     useEDLPlayer(segments, getVideo, canvasRef);
+  const {
+    isExporting,
+    progress: exportProgress,
+    statusText: exportStatus,
+    error: exportError,
+    downloadUrl: exportDownloadUrl,
+    exportConcat,
+  } = useFfmpegExport();
 
   const selectedSource = sources.find((s) => s.id === selectedSourceId) ?? null;
 
@@ -95,9 +104,11 @@ export default function Concat() {
     e.target.value = '';
   };
 
-  const handleSourceDuration = (sourceId: string, dur: number) => {
+  const handleSourceMetadata = (sourceId: string, dur: number, width: number, height: number) => {
     if (!Number.isFinite(dur)) return;
-    setSources((prev) => prev.map((s) => (s.id === sourceId ? { ...s, duration: dur } : s)));
+    setSources((prev) =>
+      prev.map((s) => (s.id === sourceId ? { ...s, duration: dur, width, height } : s)),
+    );
   };
 
   const setInFromPreview = () => {
@@ -248,7 +259,14 @@ export default function Concat() {
                 muted
                 playsInline
                 preload="auto"
-                onLoadedMetadata={(e) => handleSourceDuration(s.id, e.currentTarget.duration)}
+                onLoadedMetadata={(e) =>
+                  handleSourceMetadata(
+                    s.id,
+                    e.currentTarget.duration,
+                    e.currentTarget.videoWidth,
+                    e.currentTarget.videoHeight,
+                  )
+                }
               />
             ))}
           </div>
@@ -377,6 +395,57 @@ export default function Concat() {
             </CardHeader>
             <CardContent>
               <SegmentList segments={segments} sources={sources} onRemove={removeSegment} onMove={moveSegment} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Export</CardTitle>
+              <CardDescription>Real MP4 render via ffmpeg.wasm — runs entirely in the browser</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <Button
+                onClick={() => exportConcat(segments, sources)}
+                disabled={segments.length === 0 || isExporting}
+              >
+                <Download />
+                {isExporting ? 'Exporting…' : 'Export MP4'}
+              </Button>
+
+              {isExporting && (
+                <div className="flex flex-col gap-1">
+                  <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-[width]"
+                      style={{ width: `${Math.round(exportProgress * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{exportStatus}</span>
+                </div>
+              )}
+
+              {exportError && <p className="text-xs text-destructive">{exportError}</p>}
+
+              {!isExporting && exportDownloadUrl && (
+                <div className="flex flex-col gap-1 bg-secondary/50 rounded-lg px-2.5 py-2">
+                  <p className="text-xs font-medium">Export complete</p>
+                  <a
+                    href={exportDownloadUrl}
+                    download="concat-export.mp4"
+                    className="text-xs text-primary underline underline-offset-2 w-fit"
+                  >
+                    Download concat-export.mp4
+                  </a>
+                  <p className="text-[11px] text-muted-foreground">
+                    A download should have started automatically — if you don't see it, use the link above
+                    (it stays valid until your next export or you leave the page).
+                  </p>
+                </div>
+              )}
+
+              <p className="text-[11px] text-muted-foreground">
+                First export downloads the ffmpeg engine (~30MB, once per session).
+              </p>
             </CardContent>
           </Card>
         </aside>
